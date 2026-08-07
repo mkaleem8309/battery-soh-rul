@@ -8,6 +8,7 @@ FEATURE_COLUMNS = [
     'cumulative_cycle_count',
     'charge_time',
     'discharge_depth',
+    'cumulative_deep_dod_cycles',
     'c_rate',
     'internal_resistance_proxy',
     'cumulative_time_above_40C',
@@ -47,44 +48,13 @@ def estimate_soh_unlabeled_fallback(df: pd.DataFrame, window: int = 5) -> pd.Dat
     normalizes against initial (first-cycle) capacity per cell, and applies a rolling mean.
     """
     df = df.copy()
-    # Capacity proxy (Ah) = current_mean (A) * (discharge_time_min / 60.0)
     df['discharge_capacity_ah'] = df['current_mean'] * (df['discharge_time_min'] / 60.0)
-    
-    # First cycle baseline capacity per cell
     initial_cap = df.groupby('cell_id')['discharge_capacity_ah'].transform('first')
-    
-    # Normalized capacity percentage
     df['raw_capacity_soh'] = (df['discharge_capacity_ah'] / initial_cap) * 100.0
-    
-    # Smooth with rolling average per cell
     df['soh_unlabeled_estimated'] = df.groupby('cell_id')['raw_capacity_soh'].transform(
         lambda x: x.rolling(window=window, min_periods=1).mean()
     )
-    
     return df
-
-def run_soh_pipeline(features_path: str = None):
-    if features_path is None:
-        features_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'battery_features.csv')
-        
-    df = pd.read_csv(features_path)
-    
-    # Execute Labeled Model (Default)
-    rf_model, test_results, mae, r2 = train_soh_labeled_model(df, test_cell_id='CELL_09')
-    
-    print(f"--- SOH LABELED MODEL EVALUATION (Test Cell: CELL_09) ---")
-    print(f"Mean Absolute Error (MAE): {mae:.4f}% SoH")
-    print(f"R^2 Score: {r2:.4f}")
-    
-    # Save predictions
-    output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-    test_results.to_csv(os.path.join(output_dir, 'soh_predictions_test_cell.csv'), index=False)
-    
-    # Phase 4: Driver Identification
-    drivers_df = extract_driver_importances(rf_model, df)
-    drivers_df.to_csv(os.path.join(output_dir, 'driver_importances.csv'), index=False)
-    
-    return rf_model, test_results, mae, r2, drivers_df
 
 def extract_driver_importances(rf_model, df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -92,8 +62,6 @@ def extract_driver_importances(rf_model, df: pd.DataFrame) -> pd.DataFrame:
     and cross-checks with Pearson correlation against total SoH loss.
     """
     importances = rf_model.feature_importances_
-    
-    # Compute total SoH loss per cycle for correlation sanity-check
     df = df.copy()
     df['soh_loss'] = 100.0 - df['soh_ground_truth']
     
@@ -110,6 +78,27 @@ def extract_driver_importances(rf_model, df: pd.DataFrame) -> pd.DataFrame:
     drivers_df = drivers_df.sort_values(by='importance_score', ascending=False).reset_index(drop=True)
     return drivers_df
 
+def run_soh_pipeline(features_path: str = None):
+    if features_path is None:
+        features_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'battery_features.csv')
+        
+    df = pd.read_csv(features_path)
+    
+    # Execute Labeled Model (Default)
+    rf_model, test_results, mae, r2 = train_soh_labeled_model(df, test_cell_id='CELL_09')
+    
+    print(f"--- SOH LABELED MODEL EVALUATION (Test Cell: CELL_09) ---")
+    print(f"Mean Absolute Error (MAE): {mae:.4f}% SoH")
+    print(f"R^2 Score: {r2:.4f}")
+    
+    output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+    test_results.to_csv(os.path.join(output_dir, 'soh_predictions_test_cell.csv'), index=False)
+    
+    # Phase 4: Driver Identification
+    drivers_df = extract_driver_importances(rf_model, df)
+    drivers_df.to_csv(os.path.join(output_dir, 'driver_importances.csv'), index=False)
+    
+    return rf_model, test_results, mae, r2, drivers_df
 
 if __name__ == '__main__':
     run_soh_pipeline()

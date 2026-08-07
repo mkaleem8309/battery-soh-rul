@@ -29,23 +29,27 @@ def engineer_battery_features(input_path: str = None, output_path: str = None) -
     # 4. Internal Resistance (IR) proxy = Delta V / Delta I (Safe Division)
     delta_v = df['voltage_max'] - df['voltage_min']
     delta_i = df['current_max'] - df['current_mean']
-    # Replace tiny or zero delta_i with 1e-4 to prevent divide-by-zero Inf
     safe_delta_i = np.where(delta_i <= 1e-4, 1e-4, delta_i)
     df['internal_resistance_proxy'] = delta_v / safe_delta_i
     
-    # 5. Cumulative cycles exposed to peak temp > 40°C
+    # 5. Cumulative thermal stress (cycles with peak temp > 40°C)
     df['is_high_temp'] = (df['temperature_max'] > 40.0).astype(int)
     df['cumulative_time_above_40C'] = df.groupby('cell_id')['is_high_temp'].cumsum()
     df.drop(columns=['is_high_temp'], inplace=True)
     
-    # 6. Cumulative cycle count index per cell
+    # 6. Cumulative DoD stress (cycles with DoD > 80%)
+    df['is_deep_dod'] = (df['discharge_depth'] > 80.0).astype(int)
+    df['cumulative_deep_dod_cycles'] = df.groupby('cell_id')['is_deep_dod'].cumsum()
+    df.drop(columns=['is_deep_dod'], inplace=True)
+    
+    # 7. Cumulative cycle count index per cell
     df['cumulative_cycle_count'] = df.groupby('cell_id').cumcount() + 1
     
-    # Replace any potential residual NaNs / Infs if present
     feature_cols = [
         'charge_time', 'discharge_depth', 'c_rate',
         'internal_resistance_proxy', 'cumulative_time_above_40C',
-        'cumulative_cycle_count', 'temperature_mean', 'temperature_max'
+        'cumulative_deep_dod_cycles', 'cumulative_cycle_count',
+        'temperature_mean', 'temperature_max'
     ]
     
     df[feature_cols] = df[feature_cols].replace([np.inf, -np.inf], np.nan)

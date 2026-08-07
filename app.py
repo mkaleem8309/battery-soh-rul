@@ -98,7 +98,6 @@ st.caption("Real-Time Telemetry Analytics, Predictive Degradation Modeling & Saf
 # -----------------------------------------------------------------------------
 # 2. REAL PIPELINE DATA LOADERS
 # -----------------------------------------------------------------------------
-@st.cache_data
 def load_pipeline_data():
     data_dir = os.path.join(os.path.dirname(__file__), 'data')
     features_file = os.path.join(data_dir, 'battery_features.csv')
@@ -124,14 +123,12 @@ def load_pipeline_data():
         how='left'
     )
     
-    # Fallback to ground truth if predicted not present for non-test cells
     df_merged['soh_predicted'] = df_merged['soh_predicted'].fillna(df_merged['soh_ground_truth'])
-    
-    # Create confidence bounds (+/- residual error estimate)
     df_merged['soh_upper'] = np.clip(df_merged['soh_predicted'] + 0.8, 60.0, 100.0)
     df_merged['soh_lower'] = np.clip(df_merged['soh_predicted'] - 0.8, 60.0, 100.0)
     
     return df_merged, df_drivers
+
 
 df_all, df_drivers = load_pipeline_data()
 
