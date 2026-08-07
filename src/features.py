@@ -56,6 +56,7 @@ def build_features(df):
         "internal_resistance_proxy": internal_resistance_proxy,
         "cumulative_time_above_40C": cumulative_time_above_40C,
         "cumulative_cycle_count": cumulative_cycle_count,
+        "soh_ground_truth": df["soh_ground_truth"],
     })
 
 
