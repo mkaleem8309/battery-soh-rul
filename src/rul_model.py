@@ -34,6 +34,7 @@ v2 (later, only if v1 works and there's spare time -- ask before switching):
 """
 
 import os
+import json
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -249,35 +250,47 @@ def build_rul_output(df, threshold=SOH_THRESHOLD):
 
 
 FEATURE_IMPORTANCES_PATH = "outputs/feature_importances.csv"
+PER_CELL_DRIVERS_PATH = "outputs/per_cell_drivers.csv"
 
 
 def merge_driver_scores(rul_df, driver_df=None, on="cell_id"):
     """Merge in the driver-identification teammate's output.
 
     Handles two shapes, auto-detected from driver_df's columns:
-      - per-cell: cell_id, top_driver, driver_importance_scores -- left-joined
-        on `on`, so RUL rows are never dropped if a cell is missing driver data.
-      - fleet-wide (what src/soh_model.py currently produces, e.g.
-        outputs/feature_importances.csv): Feature, Importance columns with one
-        row per feature and no cell_id at all. There's no per-cell breakdown
-        yet, so the same fleet-level ranking is applied to every cell as the
-        best available estimate until a per-cell version exists.
+      - per-cell (outputs/per_cell_drivers.csv, preferred when present):
+        cell_id, top_driver, driver_importance_scores -- left-joined on `on`,
+        so RUL rows are never dropped if a cell is missing driver data.
+        driver_importance_scores may arrive as a JSON string (that's how
+        it round-trips through CSV) -- parsed back into a dict here so the
+        output contract (a dict, not a string) holds.
+      - fleet-wide (outputs/feature_importances.csv): Feature, Importance
+        columns with one row per feature and no cell_id at all. Used only
+        as a fallback when no per-cell file exists yet.
 
-    If driver_df is None, loads FEATURE_IMPORTANCES_PATH automatically.
-    If nothing is available at all, rul_df is returned unchanged (top_driver
-    stays None / scores stay {}) so this never breaks the pipeline.
+    If driver_df is None, prefers PER_CELL_DRIVERS_PATH, falls back to
+    FEATURE_IMPORTANCES_PATH. If nothing is available at all, rul_df is
+    returned unchanged (top_driver stays None / scores stay {}) so this
+    never breaks the pipeline.
     """
     if driver_df is None:
-        if not os.path.exists(FEATURE_IMPORTANCES_PATH):
-            print(f"[rul_model] no driver output found at {FEATURE_IMPORTANCES_PATH} -- "
-                  f"leaving top_driver / driver_importance_scores empty")
+        if os.path.exists(PER_CELL_DRIVERS_PATH):
+            driver_df = pd.read_csv(PER_CELL_DRIVERS_PATH)
+        elif os.path.exists(FEATURE_IMPORTANCES_PATH):
+            driver_df = pd.read_csv(FEATURE_IMPORTANCES_PATH)
+        else:
+            print(f"[rul_model] no driver output found at {PER_CELL_DRIVERS_PATH} or "
+                  f"{FEATURE_IMPORTANCES_PATH} -- leaving top_driver / driver_importance_scores empty")
             return rul_df
-        driver_df = pd.read_csv(FEATURE_IMPORTANCES_PATH)
 
     out = rul_df.drop(columns=["top_driver", "driver_importance_scores"]).copy()
 
     if {"cell_id", "top_driver", "driver_importance_scores"}.issubset(driver_df.columns):
-        # per-cell shape
+        # per-cell shape -- parse driver_importance_scores back into a dict if it
+        # came in as a JSON string (normal when read straight from CSV)
+        driver_df = driver_df.copy()
+        driver_df["driver_importance_scores"] = driver_df["driver_importance_scores"].apply(
+            lambda v: json.loads(v) if isinstance(v, str) else v
+        )
         merged = out.merge(driver_df[["cell_id", "top_driver", "driver_importance_scores"]],
                             on=on, how="left")
         return merged[OUTPUT_COLUMNS]
