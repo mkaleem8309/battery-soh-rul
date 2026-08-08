@@ -1,67 +1,73 @@
-import os
-import numpy as np
 import pandas as pd
+import numpy as np
+import os
 
-RATED_CAPACITY_AH = 5.0
+RATED_CAPACITY_AH = 2.0
+INPUT_PATH = "../data/synthetic_battery_data.csv"
+OUTPUT_PATH = "../data/features.csv"
 
-def engineer_battery_features(input_path: str = None, output_path: str = None) -> pd.DataFrame:
-    """
-    Computes per-cycle engineered features from raw telemetry data.
-    Ensures safe math without NaNs or Infs leaking into the feature set.
-    """
-    if input_path is None:
-        input_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'synthetic_battery_data.csv')
-        
-    df = pd.read_csv(input_path)
-    
-    # Sort to ensure running cumulative counts are computed strictly per cell
-    df = df.sort_values(by=['cell_id', 'cycle_id']).reset_index(drop=True)
-    
-    # 1. Charge duration (minutes)
-    df['charge_time'] = df['charge_time_min']
-    
-    # 2. Depth of Discharge (DoD %)
-    df['discharge_depth'] = (df['soc_max'] - df['soc_min']).clip(lower=0.0, upper=100.0)
-    
-    # 3. C-Rate proxy
-    df['c_rate'] = df['current_mean'] / RATED_CAPACITY_AH
-    
-    # 4. Internal Resistance (IR) proxy = Delta V / Delta I (Safe Division)
-    delta_v = df['voltage_max'] - df['voltage_min']
-    delta_i = df['current_max'] - df['current_mean']
-    safe_delta_i = np.where(delta_i <= 1e-4, 1e-4, delta_i)
-    df['internal_resistance_proxy'] = delta_v / safe_delta_i
-    
-    # 5. Cumulative thermal stress (cycles with peak temp > 40°C)
-    df['is_high_temp'] = (df['temperature_max'] > 40.0).astype(int)
-    df['cumulative_time_above_40C'] = df.groupby('cell_id')['is_high_temp'].cumsum()
-    df.drop(columns=['is_high_temp'], inplace=True)
-    
-    # 6. Cumulative DoD stress (cycles with DoD > 80%)
-    df['is_deep_dod'] = (df['discharge_depth'] > 80.0).astype(int)
-    df['cumulative_deep_dod_cycles'] = df.groupby('cell_id')['is_deep_dod'].cumsum()
-    df.drop(columns=['is_deep_dod'], inplace=True)
-    
-    # 7. Cumulative cycle count index per cell
-    df['cumulative_cycle_count'] = df.groupby('cell_id').cumcount() + 1
-    
-    feature_cols = [
-        'charge_time', 'discharge_depth', 'c_rate',
-        'internal_resistance_proxy', 'cumulative_time_above_40C',
-        'cumulative_deep_dod_cycles', 'cumulative_cycle_count',
-        'temperature_mean', 'temperature_max'
-    ]
-    
-    df[feature_cols] = df[feature_cols].replace([np.inf, -np.inf], np.nan)
-    df[feature_cols] = df[feature_cols].fillna(df[feature_cols].median())
-    
-    if output_path is None:
-        output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-        output_path = os.path.join(output_dir, 'battery_features.csv')
-        
-    df.to_csv(output_path, index=False)
-    print(f"Feature engineering completed. Processed {len(df)} cycles. Saved to {output_path}")
-    return df
 
-if __name__ == '__main__':
-    engineer_battery_features()
+def make_mock_data():
+    data = {
+        "cycle_id": list(range(1, 11)),
+        "cell_id": ["cell_01"] * 5 + ["cell_02"] * 5,
+        "timestamp": pd.date_range("2026-01-01", periods=10, freq="D"),
+        "voltage_mean": [3.7, 3.68, 3.65, 3.6, 3.55, 3.72, 3.7, 3.66, 3.6, 3.5],
+        "voltage_min": [3.2, 3.15, 3.1, 3.0, 2.9, 3.25, 3.2, 3.1, 3.0, 2.85],
+        "voltage_max": [4.2, 4.18, 4.15, 4.1, 4.0, 4.2, 4.19, 4.15, 4.1, 4.0],
+        "current_mean": [1.0, 1.1, 1.2, 1.4, 1.6, 0.8, 0.9, 1.0, 1.2, 1.5],
+        "current_max": [2.0, 2.1, 2.3, 2.6, 3.0, 1.6, 1.7, 1.9, 2.2, 2.8],
+        "temperature_mean": [30, 32, 35, 38, 42, 28, 29, 31, 34, 40],
+        "temperature_max": [38, 41, 43, 46, 50, 33, 35, 38, 41, 47],
+        "soc_min": [20, 18, 15, 12, 10, 25, 22, 18, 15, 10],
+        "soc_max": [95, 94, 92, 90, 88, 96, 95, 93, 90, 87],
+        "charge_time_min": [45, 46, 48, 50, 55, 40, 42, 44, 47, 52],
+        "discharge_time_min": [60, 58, 55, 50, 45, 65, 62, 58, 53, 47],
+        "soh_ground_truth": [99, 97, 95, 91, 87, 100, 98, 96, 93, 89],
+    }
+    return pd.DataFrame(data)
+
+
+def load_input_data():
+    if os.path.exists(INPUT_PATH):
+        print(f"Found real data at {INPUT_PATH} — using it.")
+        return pd.read_csv(INPUT_PATH)
+    else:
+        print(f"No file at {INPUT_PATH} yet — using mock data instead.")
+        return make_mock_data()
+
+
+def build_features(df):
+    df = df.sort_values(["cell_id", "cycle_id"]).reset_index(drop=True)
+    discharge_depth = df["soc_max"] - df["soc_min"]
+    c_rate = df["current_mean"] / RATED_CAPACITY_AH
+    current_swing = (df["current_max"] - df["current_mean"]).replace(0, np.nan)
+    internal_resistance_proxy = ((df["voltage_max"] - df["voltage_min"]) / current_swing).fillna(0)
+    over_40 = (df["temperature_max"] > 40).astype(int)
+    cumulative_time_above_40C = over_40.groupby(df["cell_id"]).cumsum()
+    cumulative_cycle_count = df.groupby("cell_id").cumcount() + 1
+
+    return pd.DataFrame({
+        "cycle_id": df["cycle_id"],
+        "cell_id": df["cell_id"],
+        "charge_time": df["charge_time_min"],
+        "discharge_depth": discharge_depth,
+        "c_rate": c_rate,
+        "internal_resistance_proxy": internal_resistance_proxy,
+        "cumulative_time_above_40C": cumulative_time_above_40C,
+        "cumulative_cycle_count": cumulative_cycle_count,
+        "soh_ground_truth": df["soh_ground_truth"],
+    })
+
+
+def main():
+    raw_df = load_input_data()
+    features_df = build_features(raw_df)
+    features_df.to_csv(OUTPUT_PATH, index=False)
+    print(features_df.head())
+    print(features_df.describe())
+    print(f"Saved to {OUTPUT_PATH}")
+
+
+if __name__ == "__main__":
+    main()

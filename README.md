@@ -4,6 +4,15 @@ A data-driven telemetry analytics platform and predictive machine learning dashb
 
 ---
 
+## 👥 Team Module Ownership
+- `src/generate_data.py` — Synthetic Telemetry Generator (Person A)
+- `src/features.py` — Feature Engineering (Person B)
+- `src/soh_model.py` — SoH Estimation Model (Person C)
+- `src/rul_model.py` — RUL Prediction & Uncertainty Bands (Person D)
+- `src/narrative.py`, `app.py` — AI Safety Narrative & Streamlit Dashboard (Person E)
+
+---
+
 ## 📌 Problem Statement
 Battery energy storage systems (BESS) and electric vehicle (EV) packs suffer non-linear capacity loss due to thermal stress, deep depth-of-discharge (DoD), and high C-rate operation. Predicting State-of-Health (SoH) and Remaining Useful Life (RUL) with reliable uncertainty bounds is critical for preventing premature failures while ensuring operational safety.
 
@@ -12,17 +21,17 @@ Battery energy storage systems (BESS) and electric vehicle (EV) packs suffer non
 ## 🛠️ Approach & System Architecture
 
 1. **Synthetic Telemetry Generator (`src/generate_data.py`)**:
-   Simulates multi-cell per-cycle telemetry (voltage, current, temperature, DoD, C-rate, durations) over 400 cycles with non-linear degradation physics.
+   Simulates multi-cell per-cycle telemetry over 400 cycles with non-linear degradation physics.
 
 2. **Feature Engineering (`src/features.py`)**:
-   Extracts physical predictors including internal resistance proxy ($\Delta V / \Delta I$), cumulative thermal exposure ($T_{\text{max}} > 40^\circ\text{C}$), C-rate, and DoD without numerical instability (`NaN`/`Inf` audited).
+   Extracts physical predictors including internal resistance proxy ($\Delta V / \Delta I$), cumulative thermal exposure ($T_{\text{max}} > 40^\circ\text{C}$), C-rate, and DoD without numerical instability.
 
 3. **SoH Degradation Modeling (`src/soh_model.py`)**:
-   - **Primary (Labeled)**: `RandomForestRegressor` mapping features $\rightarrow$ ground-truth SoH (**MAE: 0.0957%**, **$R^2$: 0.9996** on held-out test cell).
+   - **Primary (Labeled)**: `RandomForestRegressor` mapping features $\rightarrow$ ground-truth SoH.
    - **Fallback (Unlabeled)**: Integration of discharge current over time, normalized to first-cycle capacity with rolling window smoothing.
 
 4. **Driver Identification & Physics Audit**:
-   Ranks degradation stressors by Random Forest feature importance ($91.6\%$ attributed to cumulative high-temperature exposure) and cross-checks with Pearson correlation ($r = +0.928$).
+   Ranks degradation stressors by Random Forest feature importance and cross-checks with Pearson correlation.
 
 5. **RUL Prediction with Uncertainty Bands (`src/rul_model.py`)**:
    Extrapolates trailing degradation slopes to the **80% EOL threshold**, computing **Worst Case (P10)**, **Likely (P50)**, and **Best Case (P90)** remaining cycles.

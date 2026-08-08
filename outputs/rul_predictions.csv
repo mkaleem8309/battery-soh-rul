@@ -1,0 +1,3 @@
+cell_id,rul_best_cycles,rul_likely_cycles,rul_worst_cycles,current_soh,trend_slope,top_driver,driver_importance_scores
+cell_01,1494.9,,425.4,88.35,-1e-05,,{}
+cell_07,,469.3,278.2,88.64,-0.01842,,{}

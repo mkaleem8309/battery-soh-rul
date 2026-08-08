@@ -1,106 +1,128 @@
-import os
+"""
+Synthetic battery telemetry generator — Person A.
+Outputs data/synthetic_battery_data.csv matching team data contract:
+
+cycle_id, cell_id, timestamp, voltage_mean, voltage_min, voltage_max,
+current_mean, current_max, temperature_mean, temperature_max,
+soc_min, soc_max, charge_time_min, discharge_time_min, soh_ground_truth
+"""
+
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 
-def generate_synthetic_battery_data(
-    n_cells=9,
-    cycles_per_cell=400,
-    rated_capacity_ah=5.0,
-    seed=42
-):
-    """
-    Generates synthetic per-cycle battery telemetry data for multiple cells with varying usage profiles.
-    Decay rate depends on temperature, Depth of Discharge (DoD), and C-rate.
-    """
-    np.random.seed(seed)
-    
-    profiles = {
-        'mild': {'temp_mean': 25.0, 'dod_target': 0.60, 'crate_target': 0.6, 'decay_mult': 0.0004},
-        'moderate': {'temp_mean': 35.0, 'dod_target': 0.80, 'crate_target': 1.0, 'decay_mult': 0.0007},
-        'aggressive': {'temp_mean': 45.0, 'dod_target': 0.95, 'crate_target': 1.8, 'decay_mult': 0.0011}
-    }
-    
-    profile_names = list(profiles.keys())
-    records = []
-    
-    start_time = datetime(2025, 1, 1, 0, 0, 0)
-    
-    for i in range(1, n_cells + 1):
-        cell_id = f"CELL_{i:02d}"
-        profile_type = profile_names[(i - 1) % len(profile_names)]
-        prof = profiles[profile_type]
-        
-        current_soh = 100.0  # start at 100%
-        cell_time = start_time + timedelta(hours=i * 2)
-        
-        for cycle in range(1, cycles_per_cell + 1):
-            # Stressors with per-cycle noise
-            temp_mean = np.random.normal(prof['temp_mean'], 2.0)
-            temp_max = temp_mean + np.random.uniform(3.0, 7.0)
-            
-            dod = np.clip(np.random.normal(prof['dod_target'], 0.05), 0.3, 0.99)
-            soc_max = np.random.uniform(96.0, 100.0)
-            soc_min = np.clip(soc_max - (dod * 100.0), 0.0, 95.0)
-            
-            crate = np.clip(np.random.normal(prof['crate_target'], 0.1), 0.2, 2.5)
-            current_mean = crate * rated_capacity_ah
-            current_max = current_mean * np.random.uniform(1.2, 1.5)
-            
-            # Voltages (IR increases as SoH drops)
-            ir_factor = 1.0 + (100.0 - current_soh) * 0.015
-            voltage_min = np.random.uniform(2.9, 3.1)
-            voltage_max = np.random.uniform(4.15, 4.25) + (ir_factor * 0.02)
-            voltage_mean = (voltage_min + voltage_max) / 2.0 + np.random.normal(0, 0.02)
-            
-            # Durations (minutes)
-            discharge_time_min = (dod * rated_capacity_ah / current_mean) * 60.0 + np.random.normal(0, 2.0)
-            charge_time_min = 60.0 / crate + np.random.normal(0, 3.0)
-            
-            # Ground truth SoH calculation
-            # Decay rate increases non-linearly with Temp > 25°C, DoD > 80%, C-rate > 1.0C
-            temp_stress = max(1.0, (temp_mean / 25.0) ** 1.5)
-            dod_stress = max(1.0, (dod / 0.8) ** 1.3)
-            crate_stress = max(1.0, crate ** 1.2)
-            
-            cycle_decay = prof['decay_mult'] * temp_stress * dod_stress * crate_stress * 10.0
-            cycle_decay += np.random.normal(0, 0.01)  # realistic noise
-            cycle_decay = max(0.001, cycle_decay)
-            
-            current_soh -= cycle_decay
-            current_soh = max(60.0, current_soh)  # bound lower limit
-            
-            # Advance timestamp by cycle duration + idle time
-            cycle_duration_hours = (charge_time_min + discharge_time_min) / 60.0 + np.random.uniform(0.5, 2.0)
-            cell_time += timedelta(hours=cycle_duration_hours)
-            
-            records.append({
-                'cell_id': cell_id,
-                'usage_profile': profile_type,
-                'cycle_id': cycle,
-                'timestamp': cell_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'voltage_mean': round(float(voltage_mean), 3),
-                'voltage_min': round(float(voltage_min), 3),
-                'voltage_max': round(float(voltage_max), 3),
-                'current_mean': round(float(current_mean), 3),
-                'current_max': round(float(current_max), 3),
-                'temperature_mean': round(float(temp_mean), 2),
-                'temperature_max': round(float(temp_max), 2),
-                'soc_min': round(float(soc_min), 2),
-                'soc_max': round(float(soc_max), 2),
-                'charge_time_min': round(float(charge_time_min), 2),
-                'discharge_time_min': round(float(discharge_time_min), 2),
-                'soh_ground_truth': round(float(current_soh), 3)
-            })
-            
-    df = pd.DataFrame(records)
-    
-    output_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-    os.makedirs(output_dir, exist_ok=True)
-    file_path = os.path.join(output_dir, 'synthetic_battery_data.csv')
-    df.to_csv(file_path, index=False)
-    print(f"Dataset generated with {len(df)} rows across {n_cells} cells. Saved to {file_path}")
+RNG_SEED = 42
+rng = np.random.default_rng(RNG_SEED)
+
+N_CELLS = 9
+MIN_CYCLES = 300
+MAX_CYCLES = 500
+
+# usage profile -> (decay_rate, temp_bias, dod_bias, c_rate_bias)
+PROFILES = {
+    "mild":       dict(decay_k=0.00060, temp_bias=0.0, dod_bias=0.0, c_bias=0.0),
+    "moderate":   dict(decay_k=0.00110, temp_bias=6.0, dod_bias=0.10, c_bias=0.3),
+    "aggressive": dict(decay_k=0.00190, temp_bias=14.0, dod_bias=0.22, c_bias=0.8),
+}
+
+RATED_CAPACITY_AH = 2.0
+
+
+def assign_profile(cell_idx: int) -> str:
+    # roughly even spread across 9 cells: 3 mild, 3 moderate, 3 aggressive
+    order = ["mild", "moderate", "aggressive"]
+    return order[cell_idx % 3]
+
+
+def soh_curve(cycle_ids: np.ndarray, decay_k: float, floor: float = 0.66) -> np.ndarray:
+    """Exponential decay from 100% down toward ~floor, with slight
+    per-cell randomness in the decay constant."""
+    k = decay_k * rng.uniform(0.9, 1.1)
+    raw = 100.0 * np.exp(-k * cycle_ids)
+    soh = floor * 100 + (100 - floor * 100) * (raw / 100.0)
+    return soh
+
+
+def generate_cell(cell_idx: int) -> pd.DataFrame:
+    cell_id = f"cell_{cell_idx:02d}"
+    profile_name = assign_profile(cell_idx)
+    p = PROFILES[profile_name]
+
+    n_cycles = rng.integers(MIN_CYCLES, MAX_CYCLES + 1)
+    cycle_ids = np.arange(1, n_cycles + 1)
+
+    soh = soh_curve(cycle_ids, p["decay_k"])
+    soh += rng.normal(0, 0.4, size=n_cycles)  # noise
+    soh = np.clip(soh, 60, 100)
+    soh = np.maximum.accumulate(soh[::-1])[::-1]  # keep roughly monotonic-ish decline
+    soh = np.clip(soh + rng.normal(0, 0.3, size=n_cycles), 60, 100.5)
+
+    # degradation-aware signal drift: as SoH drops, internal resistance
+    # rises (voltage sag grows), capacity/discharge time shrinks
+    health_frac = soh / 100.0
+
+    voltage_mean = 3.7 - (1 - health_frac) * 0.15 + rng.normal(0, 0.01, n_cycles)
+    voltage_min = voltage_mean - (0.15 + (1 - health_frac) * 0.25) - rng.normal(0, 0.01, n_cycles).clip(min=0)
+    voltage_max = voltage_mean + (0.15 + (1 - health_frac) * 0.05) + rng.normal(0, 0.01, n_cycles).clip(min=0)
+
+    base_current = 1.0 + p["c_bias"]
+    current_mean = base_current + rng.normal(0, 0.05, n_cycles)
+    current_max = current_mean + 0.5 + p["c_bias"] * 0.5 + rng.normal(0, 0.05, n_cycles).clip(min=0)
+
+    temperature_mean = 25 + p["temp_bias"] + rng.normal(0, 1.5, n_cycles)
+    temperature_max = temperature_mean + 8 + rng.normal(0, 2.0, n_cycles).clip(min=0)
+
+    soc_min = np.clip(0.15 - p["dod_bias"] * 0.3 + rng.normal(0, 0.02, n_cycles), 0.02, 0.4)
+    soc_max = np.clip(0.95 + rng.normal(0, 0.01, n_cycles), 0.85, 1.0)
+
+    charge_time_min = (RATED_CAPACITY_AH * health_frac / current_mean) * 60 * rng.uniform(0.95, 1.05, n_cycles)
+    discharge_time_min = (RATED_CAPACITY_AH * health_frac / current_mean) * 60 * rng.uniform(0.9, 1.0, n_cycles)
+
+    start = datetime(2024, 1, 1)
+    timestamps = [start + timedelta(hours=6 * i) for i in range(n_cycles)]
+
+    df = pd.DataFrame({
+        "cycle_id": cycle_ids,
+        "cell_id": cell_id,
+        "timestamp": timestamps,
+        "voltage_mean": voltage_mean.round(4),
+        "voltage_min": voltage_min.round(4),
+        "voltage_max": voltage_max.round(4),
+        "current_mean": current_mean.round(4),
+        "current_max": current_max.round(4),
+        "temperature_mean": temperature_mean.round(2),
+        "temperature_max": temperature_max.round(2),
+        "soc_min": soc_min.round(4),
+        "soc_max": soc_max.round(4),
+        "charge_time_min": charge_time_min.round(2),
+        "discharge_time_min": discharge_time_min.round(2),
+        "soh_ground_truth": soh.round(3),
+    })
+    df.attrs["profile"] = profile_name
     return df
 
-if __name__ == '__main__':
-    generate_synthetic_battery_data()
+
+def generate_all(n_cells: int = N_CELLS) -> pd.DataFrame:
+    frames = [generate_cell(i) for i in range(n_cells)]
+    return pd.concat(frames, ignore_index=True)
+
+
+if __name__ == "__main__":
+    full_df = generate_all()
+
+    full_path = "data/synthetic_battery_data.csv"
+    full_df.to_csv(full_path, index=False)
+    print(f"Full dataset: {full_df.shape[0]} rows -> {full_path}")
+
+    # small sample for teammates to start against immediately
+    sample = full_df.groupby("cell_id").head(3).head(27)
+    sample_path = "data/sample_battery_data.csv"
+    sample.to_csv(sample_path, index=False)
+    print(f"Sample: {sample.shape[0]} rows -> {sample_path}")
+
+    print("\nCells and profiles:")
+    for i in range(N_CELLS):
+        print(f"  cell_{i:02d}: {assign_profile(i)}")
+
+    print("\nHead of full dataset:")
+    print(full_df.head())

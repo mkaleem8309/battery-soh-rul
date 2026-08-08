@@ -1,0 +1,7 @@
+Feature,Importance
+cumulative_time_above_40C,0.9020360708866215
+cumulative_cycle_count,0.09368181895792084
+charge_time,0.0012639261114713212
+c_rate,0.001086417694758616
+internal_resistance_proxy,0.0009669000672963766
+discharge_depth,0.0009648662819312954
