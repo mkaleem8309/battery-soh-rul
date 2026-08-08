@@ -6,6 +6,10 @@ from sklearn.metrics import mean_absolute_error, r2_score
 
 df = pd.read_csv("data/features.csv")
 
+print("Rows:", len(df))
+print("Cells:", df["cell_id"].nunique())
+print("Columns:", df.columns.tolist())
+
 X = df[
     [
         "charge_time",
@@ -36,7 +40,12 @@ for train_idx, test_idx in splitter.split(X, y, groups):
 
     y_train = y.iloc[train_idx]
 
-    model = RandomForestRegressor(random_state=42)
+    model = RandomForestRegressor(
+    n_estimators=300,
+    max_depth=15,
+    min_samples_leaf=2,
+    random_state=42
+)
 
     model.fit(X_train, y_train)
 
