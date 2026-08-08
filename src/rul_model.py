@@ -165,8 +165,11 @@ def _instantaneous_slope_at_current(fit, current_cycle):
 def _cycles_from_slope(current_soh, slope, threshold=SOH_THRESHOLD):
     if slope >= -MIN_SLOPE_MAGNITUDE:
         # flat, improving, or too shallow to trust -- decline signal isn't
-        # distinguishable from noise yet, so we don't extrapolate off it
-        return None
+        # distinguishable from noise yet. Rather than emit NaN (which breaks
+        # anything downstream expecting a number), treat it as "no meaningful
+        # degradation detected yet" and report the cap -- i.e. at least this
+        # many cycles remain under current conditions.
+        return MAX_REASONABLE_RUL
     rul = (current_soh - threshold) / (-slope)
     rul = max(rul, 0.0)
     return min(rul, MAX_REASONABLE_RUL)  # cap absurd extrapolations from a barely-negative slope
@@ -206,6 +209,15 @@ def compute_bands_for_cell(cell_df, threshold=SOH_THRESHOLD):
     if abs(slope_best) > abs(slope_worst):  # keep best = shallowest, worst = steepest
         slope_best, slope_worst = slope_worst, slope_best
 
+    # slope_likely comes from a different fit (whole-window trend) than
+    # slope_best/slope_worst (local sub-window quantiles), so nothing
+    # guarantees it falls between them -- e.g. a near-flat whole-window
+    # fit can hit the MAX_REASONABLE_RUL cap while noisier sub-windows
+    # still show decline, producing worst < likely < best violations that
+    # would confuse anyone consuming these bands. Clamp so the ordering
+    # worst <= likely <= best always holds.
+    slope_likely = min(max(slope_likely, slope_worst), slope_best)
+
     return {
         "cell_id": cell_df["cell_id"].iloc[0],
         "rul_best_cycles": _round_or_none(_cycles_from_slope(current_soh, slope_best, threshold)),
@@ -236,19 +248,58 @@ def build_rul_output(df, threshold=SOH_THRESHOLD):
     return pd.DataFrame(records, columns=OUTPUT_COLUMNS)
 
 
-def merge_driver_scores(rul_df, driver_df, on="cell_id"):
-    """Merge in the driver-identification teammate's output once it's ready.
-    Expects driver_df to have at least: cell_id, top_driver, driver_importance_scores.
-    Left join so RUL rows are never dropped if a cell is missing driver data."""
-    merged = rul_df.drop(columns=["top_driver", "driver_importance_scores"]).merge(
-        driver_df[[on, "top_driver", "driver_importance_scores"]], on=on, how="left"
-    )
-    return merged[OUTPUT_COLUMNS]
+FEATURE_IMPORTANCES_PATH = "outputs/feature_importances.csv"
+
+
+def merge_driver_scores(rul_df, driver_df=None, on="cell_id"):
+    """Merge in the driver-identification teammate's output.
+
+    Handles two shapes, auto-detected from driver_df's columns:
+      - per-cell: cell_id, top_driver, driver_importance_scores -- left-joined
+        on `on`, so RUL rows are never dropped if a cell is missing driver data.
+      - fleet-wide (what src/soh_model.py currently produces, e.g.
+        outputs/feature_importances.csv): Feature, Importance columns with one
+        row per feature and no cell_id at all. There's no per-cell breakdown
+        yet, so the same fleet-level ranking is applied to every cell as the
+        best available estimate until a per-cell version exists.
+
+    If driver_df is None, loads FEATURE_IMPORTANCES_PATH automatically.
+    If nothing is available at all, rul_df is returned unchanged (top_driver
+    stays None / scores stay {}) so this never breaks the pipeline.
+    """
+    if driver_df is None:
+        if not os.path.exists(FEATURE_IMPORTANCES_PATH):
+            print(f"[rul_model] no driver output found at {FEATURE_IMPORTANCES_PATH} -- "
+                  f"leaving top_driver / driver_importance_scores empty")
+            return rul_df
+        driver_df = pd.read_csv(FEATURE_IMPORTANCES_PATH)
+
+    out = rul_df.drop(columns=["top_driver", "driver_importance_scores"]).copy()
+
+    if {"cell_id", "top_driver", "driver_importance_scores"}.issubset(driver_df.columns):
+        # per-cell shape
+        merged = out.merge(driver_df[["cell_id", "top_driver", "driver_importance_scores"]],
+                            on=on, how="left")
+        return merged[OUTPUT_COLUMNS]
+
+    if {"Feature", "Importance"}.issubset(driver_df.columns):
+        # fleet-wide shape -- same ranking applied to every cell
+        ranked = driver_df.sort_values("Importance", ascending=False)
+        global_top_driver = ranked.iloc[0]["Feature"]
+        global_scores = dict(zip(ranked["Feature"], ranked["Importance"].round(4)))
+        out["top_driver"] = global_top_driver
+        out["driver_importance_scores"] = [global_scores] * len(out)
+        return out[OUTPUT_COLUMNS]
+
+    print(f"[rul_model] driver_df columns {list(driver_df.columns)} don't match either "
+          f"expected shape -- leaving top_driver / driver_importance_scores empty")
+    return rul_df
 
 
 if __name__ == "__main__":
     df = load_soh_data()
     out = build_rul_output(df)
+    out = merge_driver_scores(out)  # fills top_driver / driver_importance_scores if available
 
     os.makedirs("outputs", exist_ok=True)
     out.to_csv(RUL_OUTPUT_PATH, index=False)
