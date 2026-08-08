@@ -1,8 +1,8 @@
 cell_id,top_driver,driver_importance_scores
-cell_00,internal_resistance_proxy,"{""cumulative_time_above_40C"": 0.0, ""discharge_depth"": 0.0, ""c_rate"": 0.0, ""internal_resistance_proxy"": 1.0}"
+cell_00,internal_resistance_proxy,"{""cumulative_time_above_40C"": 0.0, ""discharge_depth"": 0.0804, ""c_rate"": 0.2016, ""internal_resistance_proxy"": 0.7181}"
 cell_01,cumulative_time_above_40C,"{""cumulative_time_above_40C"": 0.6063, ""discharge_depth"": 0.0, ""c_rate"": 0.0, ""internal_resistance_proxy"": 0.3937}"
 cell_02,cumulative_time_above_40C,"{""cumulative_time_above_40C"": 0.5658, ""discharge_depth"": 0.0124, ""c_rate"": 0.0, ""internal_resistance_proxy"": 0.4217}"
-cell_03,internal_resistance_proxy,"{""cumulative_time_above_40C"": 0.0, ""discharge_depth"": 0.0, ""c_rate"": 0.0, ""internal_resistance_proxy"": 1.0}"
+cell_03,internal_resistance_proxy,"{""cumulative_time_above_40C"": 0.0, ""discharge_depth"": 0.0156, ""c_rate"": 0.0391, ""internal_resistance_proxy"": 0.9453}"
 cell_04,cumulative_time_above_40C,"{""cumulative_time_above_40C"": 0.6162, ""discharge_depth"": 0.0, ""c_rate"": 0.0246, ""internal_resistance_proxy"": 0.3592}"
 cell_05,cumulative_time_above_40C,"{""cumulative_time_above_40C"": 0.5763, ""discharge_depth"": 0.0023, ""c_rate"": 0.0, ""internal_resistance_proxy"": 0.4215}"
 cell_06,cumulative_time_above_40C,"{""cumulative_time_above_40C"": 0.6972, ""discharge_depth"": 0.0002, ""c_rate"": 0.0528, ""internal_resistance_proxy"": 0.2498}"
