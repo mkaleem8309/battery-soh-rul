@@ -1,4 +1,5 @@
 import os
+import ast
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -136,7 +137,7 @@ def load_pipeline_data():
     df_merged['soh_upper'] = np.clip(df_merged['soh_predicted'] + 0.8, 60.0, 100.0)
     df_merged['soh_lower'] = np.clip(df_merged['soh_predicted'] - 0.8, 60.0, 100.0)
     
-    # RUL Predictions from Person D
+    # RUL Predictions from Person D (includes per-cell driver scores)
     rul_file = os.path.join('outputs', 'rul_predictions.csv')
     if os.path.exists(rul_file):
         df_rul = pd.read_csv(rul_file)
@@ -156,7 +157,7 @@ selected_cell = st.sidebar.selectbox("Select Target Battery Cell:", cell_list)
 
 df_cell = df_all[df_all['cell_id'] == selected_cell].sort_values('cycle_id').reset_index(drop=True)
 
-# Fetch RUL stats for selected cell from Person D's module output
+# Fetch RUL stats & per-cell driver scores for selected cell from Person D's module output
 cell_rul_row = df_rul[df_rul['cell_id'] == selected_cell]
 if len(cell_rul_row) > 0:
     r_row = cell_rul_row.iloc[0]
@@ -165,17 +166,30 @@ if len(cell_rul_row) > 0:
     
     rul_likely = int(r_row['rul_likely_cycles']) if pd.notna(r_row['rul_likely_cycles']) else 0
     rul_worst = int(r_row['rul_worst_cycles']) if pd.notna(r_row['rul_worst_cycles']) else 0
-    rul_best = int(r_row['rul_best_cycles']) if pd.notna(r_row['rul_best_cycles']) else 3000
+    rul_best = int(r_row['rul_best_cycles']) if pd.notna(r_row['rul_best_cycles']) else 5000
+    
+    cell_top_driver = str(r_row['top_driver']) if pd.notna(r_row['top_driver']) else "Cumulative Time Above 40C"
+    cell_scores_raw = r_row['driver_importance_scores']
+    if isinstance(cell_scores_raw, str):
+        try:
+            cell_scores_dict = ast.literal_eval(cell_scores_raw)
+        except Exception:
+            cell_scores_dict = {}
+    elif isinstance(cell_scores_raw, dict):
+        cell_scores_dict = cell_scores_raw
+    else:
+        cell_scores_dict = {}
 else:
     rul_dict = rm.compute_bands_for_cell(df_cell)
     current_soh = float(rul_dict['current_soh'])
     slope_val = float(rul_dict['trend_slope'])
     rul_likely = int(rul_dict['rul_likely_cycles']) if rul_dict['rul_likely_cycles'] is not None else 0
     rul_worst = int(rul_dict['rul_worst_cycles']) if rul_dict['rul_worst_cycles'] is not None else 0
-    rul_best = int(rul_dict['rul_best_cycles']) if rul_dict['rul_best_cycles'] is not None else 3000
+    rul_best = int(rul_dict['rul_best_cycles']) if rul_dict['rul_best_cycles'] is not None else 5000
+    cell_top_driver = "Cumulative Time Above 40C"
+    cell_scores_dict = {}
 
-# Top driver from Person C's feature importance output
-top_feat_name = str(df_drivers.iloc[0]['Feature']).replace('_', ' ').title()
+top_feat_name = cell_top_driver.replace('_', ' ').title()
 
 # Status classification logic
 if current_soh <= 80.0:
@@ -215,8 +229,8 @@ with col2:
 with col3:
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-title">Primary Driver</div>
-        <div class="kpi-value" style="font-size: 1.1rem; margin-top: 8px;">{top_feat_name}</div>
+        <div class="kpi-title">Primary Cell Driver</div>
+        <div class="kpi-value" style="font-size: 1.05rem; margin-top: 8px;">{top_feat_name}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -279,21 +293,26 @@ fig_soh.update_layout(
 st.plotly_chart(fig_soh, width='stretch')
 
 # -----------------------------------------------------------------------------
-# 6. CHARTS ROW 2: REAL DRIVER IMPORTANCE & REAL RUL BANDS
+# 6. CHARTS ROW 2: PER-CELL DRIVER IMPORTANCE & REAL RUL BANDS
 # -----------------------------------------------------------------------------
 col_chart1, col_chart2 = st.columns(2)
 
 with col_chart1:
-    st.subheader("📊 Key Degradation Drivers (Feature Importances)")
-    top_drivers = df_drivers.head(5).copy()
-    top_drivers['clean_name'] = top_drivers['Feature'].str.replace('_', ' ').str.title()
-    
+    st.subheader("📊 Key Degradation Drivers (Cell-Specific)")
+    if cell_scores_dict:
+        driver_df_cell = pd.DataFrame(list(cell_scores_dict.items()), columns=['Feature', 'Importance'])
+        driver_df_cell['clean_name'] = driver_df_cell['Feature'].str.replace('_', ' ').str.title()
+        driver_df_cell = driver_df_cell.sort_values('Importance', ascending=False).head(5)
+    else:
+        driver_df_cell = df_drivers.head(5).copy()
+        driver_df_cell['clean_name'] = driver_df_cell['Feature'].str.replace('_', ' ').str.title()
+        
     fig_driver = go.Figure(go.Bar(
-        x=top_drivers['Importance'],
-        y=top_drivers['clean_name'],
+        x=driver_df_cell['Importance'],
+        y=driver_df_cell['clean_name'],
         orientation='h',
         marker=dict(
-            color=top_drivers['Importance'],
+            color=driver_df_cell['Importance'],
             colorscale='Viridis'
         )
     ))
