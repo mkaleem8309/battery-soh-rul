@@ -3,8 +3,10 @@ import numpy as np
 import os
 
 RATED_CAPACITY_AH = 2.0
-INPUT_PATH = "../data/synthetic_battery_data.csv"
-OUTPUT_PATH = "../data/features.csv"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+INPUT_PATH = os.path.join(PROJECT_ROOT, "data", "synthetic_battery_data.csv")
+OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "features.csv")
 
 
 def make_mock_data():
