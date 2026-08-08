@@ -43,7 +43,7 @@ for train_idx, test_idx in splitter.split(X, y, groups):
     model = RandomForestRegressor(
     n_estimators=300,
     max_depth=15,
-    min_samples_leaf=2,
+    min_samples_leaf=8,
     random_state=42
 )
 
