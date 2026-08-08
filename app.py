@@ -4,10 +4,9 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-from src.features import engineer_battery_features
-from src.soh_model import run_soh_pipeline
-from src.rul_model import predict_cell_rul
 from src.narrative import generate_operator_narrative
+import src.features as ft
+import src.rul_model as rm
 
 # -----------------------------------------------------------------------------
 # PAGE CONFIG & STYLING
@@ -96,41 +95,57 @@ st.title("🔋 Battery State-of-Health (SoH) & RUL Estimator")
 st.caption("Real-Time Telemetry Analytics, Predictive Degradation Modeling & Safety Guardrails")
 
 # -----------------------------------------------------------------------------
-# 2. REAL PIPELINE DATA LOADERS
+# 2. REAL TEAMMATES DATA LOADERS
 # -----------------------------------------------------------------------------
 def load_pipeline_data():
-    data_dir = os.path.join(os.path.dirname(__file__), 'data')
-    features_file = os.path.join(data_dir, 'battery_features.csv')
-    
+    features_file = os.path.join('data', 'features.csv')
     if not os.path.exists(features_file):
-        df_features = engineer_battery_features()
+        synthetic_file = os.path.join('data', 'synthetic_battery_data.csv')
+        if os.path.exists(synthetic_file):
+            raw_df = pd.read_csv(synthetic_file)
+            df_features = ft.build_features(raw_df)
+        else:
+            df_features = ft.make_mock_data()
     else:
         df_features = pd.read_csv(features_file)
         
-    drivers_file = os.path.join(data_dir, 'driver_importances.csv')
-    test_preds_file = os.path.join(data_dir, 'soh_predictions_test_cell.csv')
-    
-    if not (os.path.exists(drivers_file) and os.path.exists(test_preds_file)):
-        rf_model, test_results, mae, r2, df_drivers = run_soh_pipeline()
-    else:
+    drivers_file = os.path.join('outputs', 'feature_importances.csv')
+    if os.path.exists(drivers_file):
         df_drivers = pd.read_csv(drivers_file)
-        test_results = pd.read_csv(test_preds_file)
+    else:
+        df_drivers = pd.DataFrame({
+            'Feature': ['cumulative_time_above_40C', 'c_rate', 'discharge_depth'],
+            'Importance': [0.85, 0.10, 0.05]
+        })
         
-    # Merge test cell predictions into main dataframe
+    soh_preds_file = os.path.join('outputs', 'soh_predictions.csv')
+    if os.path.exists(soh_preds_file):
+        df_soh = pd.read_csv(soh_preds_file)
+    else:
+        df_soh = df_features[['cycle_id', 'cell_id', 'soh_ground_truth']].copy()
+        df_soh['soh_predicted'] = df_soh['soh_ground_truth']
+        
+    # Merge predictions into main feature dataframe
     df_merged = df_features.merge(
-        test_results[['cell_id', 'cycle_id', 'soh_predicted']], 
+        df_soh[['cell_id', 'cycle_id', 'soh_predicted']], 
         on=['cell_id', 'cycle_id'], 
         how='left'
     )
-    
     df_merged['soh_predicted'] = df_merged['soh_predicted'].fillna(df_merged['soh_ground_truth'])
+    
     df_merged['soh_upper'] = np.clip(df_merged['soh_predicted'] + 0.8, 60.0, 100.0)
     df_merged['soh_lower'] = np.clip(df_merged['soh_predicted'] - 0.8, 60.0, 100.0)
     
-    return df_merged, df_drivers
+    # RUL Predictions from Person D
+    rul_file = os.path.join('outputs', 'rul_predictions.csv')
+    if os.path.exists(rul_file):
+        df_rul = pd.read_csv(rul_file)
+    else:
+        df_rul = rm.build_rul_output(df_soh)
+        
+    return df_merged, df_drivers, df_rul
 
-
-df_all, df_drivers = load_pipeline_data()
+df_all, df_drivers, df_rul = load_pipeline_data()
 
 # -----------------------------------------------------------------------------
 # 3. SIDEBAR CONTROLS & CELL METADATA
@@ -140,16 +155,27 @@ cell_list = sorted(df_all['cell_id'].unique().tolist())
 selected_cell = st.sidebar.selectbox("Select Target Battery Cell:", cell_list)
 
 df_cell = df_all[df_all['cell_id'] == selected_cell].sort_values('cycle_id').reset_index(drop=True)
-profile_type = df_cell['usage_profile'].iloc[0].title() if 'usage_profile' in df_cell.columns else "Standard"
 
-# Calculate real RUL via src/rul_model.py
-rul_dict = predict_cell_rul(df_cell, window_size=50)
+# Fetch RUL stats for selected cell from Person D's module output
+cell_rul_row = df_rul[df_rul['cell_id'] == selected_cell]
+if len(cell_rul_row) > 0:
+    r_row = cell_rul_row.iloc[0]
+    current_soh = float(r_row['current_soh']) if pd.notna(r_row['current_soh']) else float(df_cell['soh_predicted'].iloc[-1])
+    slope_val = float(r_row['trend_slope']) if pd.notna(r_row['trend_slope']) else -0.01
+    
+    rul_likely = int(r_row['rul_likely_cycles']) if pd.notna(r_row['rul_likely_cycles']) else 0
+    rul_worst = int(r_row['rul_worst_cycles']) if pd.notna(r_row['rul_worst_cycles']) else 0
+    rul_best = int(r_row['rul_best_cycles']) if pd.notna(r_row['rul_best_cycles']) else 3000
+else:
+    rul_dict = rm.compute_bands_for_cell(df_cell)
+    current_soh = float(rul_dict['current_soh'])
+    slope_val = float(rul_dict['trend_slope'])
+    rul_likely = int(rul_dict['rul_likely_cycles']) if rul_dict['rul_likely_cycles'] is not None else 0
+    rul_worst = int(rul_dict['rul_worst_cycles']) if rul_dict['rul_worst_cycles'] is not None else 0
+    rul_best = int(rul_dict['rul_best_cycles']) if rul_dict['rul_best_cycles'] is not None else 3000
 
-current_soh = float(rul_dict['current_soh'])
-rul_likely = int(rul_dict['rul_likely'])
-rul_worst = int(rul_dict['rul_worst'])
-rul_best = int(rul_dict['rul_best'])
-slope_val = float(rul_dict.get('slope_per_cycle', -0.01))
+# Top driver from Person C's feature importance output
+top_feat_name = str(df_drivers.iloc[0]['Feature']).replace('_', ' ').title()
 
 # Status classification logic
 if current_soh <= 80.0:
@@ -159,15 +185,11 @@ elif current_soh <= 85.0 or slope_val <= -0.05:
 else:
     status_label = "Healthy"
 
-top_driver_row = df_drivers.iloc[0]
-top_driver_name = str(top_driver_row['feature']).replace('_', ' ').title()
-
 st.sidebar.markdown("---")
 st.sidebar.subheader("📋 Cell Profile")
 st.sidebar.write(f"**Cell ID**: `{selected_cell}`")
-st.sidebar.write(f"**Usage Profile**: {profile_type} Usage")
 st.sidebar.write(f"**Telemetry Cycles**: {len(df_cell)}")
-st.sidebar.write(f"**Degradation Slope**: `{slope_val:.4f}% / cycle`")
+st.sidebar.write(f"**Degradation Slope**: `{slope_val:.5f}% / cycle`")
 
 # -----------------------------------------------------------------------------
 # 4. KPI SUMMARY CARDS ROW
@@ -194,7 +216,7 @@ with col3:
     st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-title">Primary Driver</div>
-        <div class="kpi-value" style="font-size: 1.1rem; margin-top: 8px;">{top_driver_name}</div>
+        <div class="kpi-value" style="font-size: 1.1rem; margin-top: 8px;">{top_feat_name}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -216,7 +238,6 @@ st.subheader("📉 State-of-Health (SoH) Decay Trajectory")
 
 fig_soh = go.Figure()
 
-# 90% Confidence Band
 fig_soh.add_trace(go.Scatter(
     x=pd.concat([df_cell['cycle_id'], df_cell['cycle_id'][::-1]]),
     y=pd.concat([df_cell['soh_upper'], df_cell['soh_lower'][::-1]]),
@@ -228,7 +249,6 @@ fig_soh.add_trace(go.Scatter(
     name='Model Confidence Interval'
 ))
 
-# Ground Truth SoH Line
 fig_soh.add_trace(go.Scatter(
     x=df_cell['cycle_id'],
     y=df_cell['soh_ground_truth'],
@@ -237,7 +257,6 @@ fig_soh.add_trace(go.Scatter(
     line=dict(color='#38bdf8', width=2, dash='dash')
 ))
 
-# Predicted SoH Line
 fig_soh.add_trace(go.Scatter(
     x=df_cell['cycle_id'],
     y=df_cell['soh_predicted'],
@@ -246,7 +265,6 @@ fig_soh.add_trace(go.Scatter(
     line=dict(color='#818cf8', width=3)
 ))
 
-# 80% EOL Cutoff
 fig_soh.add_hline(y=80.0, line_dash="dash", line_color="#ef4444", annotation_text="80% End-of-Life Threshold", annotation_position="bottom right")
 
 fig_soh.update_layout(
@@ -267,15 +285,15 @@ col_chart1, col_chart2 = st.columns(2)
 
 with col_chart1:
     st.subheader("📊 Key Degradation Drivers (Feature Importances)")
-    top_5_drivers = df_drivers.head(5).copy()
-    top_5_drivers['clean_name'] = top_5_drivers['feature'].str.replace('_', ' ').str.title()
+    top_drivers = df_drivers.head(5).copy()
+    top_drivers['clean_name'] = top_drivers['Feature'].str.replace('_', ' ').str.title()
     
     fig_driver = go.Figure(go.Bar(
-        x=top_5_drivers['importance_score'],
-        y=top_5_drivers['clean_name'],
+        x=top_drivers['Importance'],
+        y=top_drivers['clean_name'],
         orientation='h',
         marker=dict(
-            color=top_5_drivers['importance_score'],
+            color=top_drivers['Importance'],
             colorscale='Viridis'
         )
     ))
@@ -329,7 +347,7 @@ def fetch_real_narrative(soh_v, slope_v, driver_str, r_best, r_likely, r_worst):
 
 with st.spinner("🤖 Generating safety-aware narrative via local Ollama model (llama3.2:3b)..."):
     narrative_output = fetch_real_narrative(
-        current_soh, slope_val, top_driver_name, rul_best, rul_likely, rul_worst
+        current_soh, slope_val, top_feat_name, rul_best, rul_likely, rul_worst
     )
 
 st.info(narrative_output)
