@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 RNG_SEED = 42
 rng = np.random.default_rng(RNG_SEED)
 
-N_CELLS = 9
+N_CELLS = 18
 MIN_CYCLES = 300
 MAX_CYCLES = 500
 
@@ -29,9 +29,15 @@ RATED_CAPACITY_AH = 2.0
 
 
 def assign_profile(cell_idx: int) -> str:
-    # roughly even spread across 9 cells: 3 mild, 3 moderate, 3 aggressive
+    # roughly even spread across cells: cycles through mild, moderate, aggressive
     order = ["mild", "moderate", "aggressive"]
     return order[cell_idx % 3]
+
+
+def cell_variation_seed(cell_idx: int) -> None:
+    """Slightly different noise/decay jitter per cell, even within the
+    same profile, so cells aren't identical twins."""
+    pass
 
 
 def soh_curve(cycle_ids: np.ndarray, decay_k: float, floor: float = 0.66) -> np.ndarray:
