@@ -66,8 +66,9 @@ Battery energy storage systems (BESS) and electric vehicle (EV) packs suffer non
 
 ## 📋 Key Assumptions & Limitations
 
-- **Future Usage Continuity**: RUL extrapolation assumes future cell operating conditions remain consistent with trailing 50-cycle history.
-- **EOL Cutoff**: Standard End-of-Life is fixed at **80.0% SoH**.
+- **Future Usage Continuity**: RUL extrapolation assumes future cell operating conditions remain consistent with the trailing 60-cycle history (`RECENT_WINDOW = 60`).
+- **EOL Cutoff Threshold**: Standard End-of-Life is fixed at **80.0% SoH** (`SOH_THRESHOLD = 80.0`).
+- **RUL Sanity Cap**: Extrapolated RUL upper bound is capped at **5,000 cycles** (`MAX_REASONABLE_RUL = 5000`) for shallow/near-flat degradation slopes.
 - **Synthetic Telemetry**: Built for MVP validation using simulated multi-profile telemetry.
 
 ---
