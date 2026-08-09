@@ -252,11 +252,11 @@ else:
 
 top_feat_name = cell_top_driver.replace('_', ' ').title()
 
-# Status classification logic
-if current_soh <= 80.0:
+# Status classification logic: SoH <= 80% OR RUL <= 50 cycles triggers Replace Soon
+if current_soh <= 80.0 or rul_likely <= 50:
     status_label = "Replace Soon"
     badge_class = "badge-replace"
-elif current_soh <= 85.0 or slope_val <= -0.05:
+elif current_soh <= 85.0 or slope_val <= -0.03:
     status_label = "Monitor Closely"
     badge_class = "badge-monitor"
 else:

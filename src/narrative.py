@@ -28,10 +28,10 @@ def generate_operator_narrative(
     """
     Generates a 2-3 sentence safety-aware narrative summary for a battery cell.
     """
-    # Deterministic fallback classification rule for high slope/uncertainty
-    if current_soh <= 80.0:
+    # Deterministic fallback classification rule: SoH <= 80% OR RUL <= 50 cycles triggers Replace Soon
+    if current_soh <= 80.0 or (rul_likely_cycles is not None and rul_likely_cycles <= 50):
         recommended_status = "Replace Soon"
-    elif current_soh <= 85.0 or trend_slope <= -0.10:
+    elif current_soh <= 85.0 or trend_slope <= -0.03:
         recommended_status = "Monitor Closely"
     else:
         recommended_status = "Healthy"
