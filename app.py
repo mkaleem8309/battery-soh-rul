@@ -10,7 +10,7 @@ import src.features as ft
 import src.rul_model as rm
 
 # -----------------------------------------------------------------------------
-# PAGE CONFIG & STYLING
+# 1. PAGE CONFIG & CONSOLIDATED STYLING
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Battery SoH & RUL Estimator",
@@ -19,76 +19,140 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for glassmorphism & disclaimer banner styling
+# Consolidated CSS design system
 st.markdown("""
 <style>
-    /* Persistent Disclaimer Banner */
-    .disclaimer-banner {
-        background-color: rgba(220, 38, 38, 0.15);
-        border: 1px solid #ef4444;
-        border-radius: 8px;
-        padding: 14px 20px;
-        margin-bottom: 24px;
-        color: #fca5a5;
-        font-weight: 500;
-        font-size: 0.95rem;
+    /* System font stack & base dark theme background */
+    html, body, [class*="css"] {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
-    .disclaimer-banner strong {
-        color: #ef4444;
+    .stApp {
+        background-color: #0b0f19;
+        color: #f8fafc;
     }
     
-    /* Card styling */
-    .kpi-card {
-        background-color: #1e293b;
-        border: 1px solid #334155;
+    /* Top Disclaimer Banner */
+    .disclaimer-banner {
+        background: linear-gradient(90deg, rgba(185, 28, 28, 0.25) 0%, rgba(153, 27, 27, 0.15) 100%);
+        border: 1px solid #ef4444;
         border-radius: 10px;
-        padding: 16px;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+        color: #fca5a5;
+        font-weight: 500;
+        font-size: 0.92rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+    }
+    .disclaimer-banner strong {
+        color: #f87171;
+    }
+    
+    /* Glassmorphism Card Containers */
+    .glass-card {
+        background: rgba(30, 41, 59, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 20px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        margin-bottom: 16px;
+    }
+    
+    /* KPI Metric Cards */
+    .kpi-card {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 18px 14px;
         text-align: center;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        border-color: #38bdf8;
     }
     .kpi-title {
         color: #94a3b8;
-        font-size: 0.85rem;
-        font-weight: 600;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         margin-bottom: 6px;
     }
     .kpi-value {
         color: #f8fafc;
-        font-size: 1.8rem;
-        font-weight: 700;
+        font-size: 1.85rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+    .kpi-subtext {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        font-weight: 500;
     }
     
     /* Status Badges */
+    .badge-pill {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-align: center;
+    }
     .badge-healthy {
-        background-color: #15803d;
-        color: #bbf7d0;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-weight: 600;
+        background-color: rgba(21, 128, 61, 0.3);
+        border: 1px solid #22c55e;
+        color: #86efac;
     }
     .badge-monitor {
-        background-color: #b45309;
-        color: #fef08a;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-weight: 600;
+        background-color: rgba(180, 83, 9, 0.3);
+        border: 1px solid #f59e0b;
+        color: #fde047;
     }
     .badge-replace {
-        background-color: #b91c1c;
-        color: #fecaca;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-weight: 600;
+        background-color: rgba(185, 28, 28, 0.3);
+        border: 1px solid #ef4444;
+        color: #fca5a5;
+    }
+
+    /* Section Subheaders */
+    .section-header {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Narrative Info Box styling */
+    .narrative-box {
+        background: rgba(15, 23, 42, 0.8);
+        border-left: 4px solid #38bdf8;
+        border-radius: 8px;
+        padding: 16px 20px;
+        color: #e2e8f0;
+        font-size: 0.98rem;
+        line-height: 1.6;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1. PERSISTENT DISCLAIMER BANNER
+# 2. TOP DISCLAIMER BANNER (NON-DISMISSIBLE)
 # -----------------------------------------------------------------------------
 st.markdown("""
 <div class="disclaimer-banner">
-    ⚠️ <strong>SAFETY DISCLAIMER:</strong> This is a data-driven estimate, not a substitute for manufacturer testing or certified diagnostics. Do not use this tool as the sole basis for safety-critical decisions.
+    <span style="font-size: 1.2rem;">⚠️</span>
+    <div>
+        <strong>SAFETY DISCLAIMER:</strong> Predictive telemetry estimates are for advisory decision-support only and do not replace certified physical testing or manufacturer diagnostics.
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -96,8 +160,9 @@ st.title("🔋 Battery State-of-Health (SoH) & RUL Estimator")
 st.caption("Real-Time Telemetry Analytics, Predictive Degradation Modeling & Safety Guardrails")
 
 # -----------------------------------------------------------------------------
-# 2. REAL TEAMMATES DATA LOADERS
+# 3. REAL TEAMMATES DATA LOADERS
 # -----------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
 def load_pipeline_data():
     features_file = os.path.join('data', 'features.csv')
     if not os.path.exists(features_file):
@@ -126,18 +191,15 @@ def load_pipeline_data():
         df_soh = df_features[['cycle_id', 'cell_id', 'soh_ground_truth']].copy()
         df_soh['soh_predicted'] = df_soh['soh_ground_truth']
         
-    # Merge predictions into main feature dataframe
     df_merged = df_features.merge(
         df_soh[['cell_id', 'cycle_id', 'soh_predicted']], 
         on=['cell_id', 'cycle_id'], 
         how='left'
     )
     df_merged['soh_predicted'] = df_merged['soh_predicted'].fillna(df_merged['soh_ground_truth'])
-    
     df_merged['soh_upper'] = np.clip(df_merged['soh_predicted'] + 0.8, 60.0, 100.0)
     df_merged['soh_lower'] = np.clip(df_merged['soh_predicted'] - 0.8, 60.0, 100.0)
     
-    # RUL Predictions from Person D (includes per-cell driver scores)
     rul_file = os.path.join('outputs', 'rul_predictions.csv')
     if os.path.exists(rul_file):
         df_rul = pd.read_csv(rul_file)
@@ -149,15 +211,14 @@ def load_pipeline_data():
 df_all, df_drivers, df_rul = load_pipeline_data()
 
 # -----------------------------------------------------------------------------
-# 3. SIDEBAR CONTROLS & CELL METADATA
+# 4. SIDEBAR CONTROLS & CELL METADATA
 # -----------------------------------------------------------------------------
-st.sidebar.header("🕹️ Cell Controls")
+st.sidebar.header("🕹️ Cell Selection & Controls")
 cell_list = sorted(df_all['cell_id'].unique().tolist())
-selected_cell = st.sidebar.selectbox("Select Target Battery Cell:", cell_list)
+selected_cell = st.sidebar.selectbox("Target Battery Cell:", cell_list)
 
 df_cell = df_all[df_all['cell_id'] == selected_cell].sort_values('cycle_id').reset_index(drop=True)
 
-# Fetch RUL stats & per-cell driver scores for selected cell from Person D's module output
 cell_rul_row = df_rul[df_rul['cell_id'] == selected_cell]
 if len(cell_rul_row) > 0:
     r_row = cell_rul_row.iloc[0]
@@ -194,26 +255,30 @@ top_feat_name = cell_top_driver.replace('_', ' ').title()
 # Status classification logic
 if current_soh <= 80.0:
     status_label = "Replace Soon"
+    badge_class = "badge-replace"
 elif current_soh <= 85.0 or slope_val <= -0.05:
     status_label = "Monitor Closely"
+    badge_class = "badge-monitor"
 else:
     status_label = "Healthy"
+    badge_class = "badge-healthy"
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📋 Cell Profile")
-st.sidebar.write(f"**Cell ID**: `{selected_cell}`")
-st.sidebar.write(f"**Telemetry Cycles**: {len(df_cell)}")
-st.sidebar.write(f"**Degradation Slope**: `{slope_val:.5f}% / cycle`")
+st.sidebar.subheader("📋 Active Cell Profile")
+st.sidebar.write(f"**Cell Identifier**: `{selected_cell}`")
+st.sidebar.write(f"**Telemetry History**: `{len(df_cell)} cycles`")
+st.sidebar.write(f"**Decline Velocity**: `{slope_val:.5f}% / cycle`")
+st.sidebar.write(f"**Status Tier**: <span class=\"badge-pill {badge_class}\">{status_label}</span>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 4. KPI SUMMARY CARDS ROW
+# 5. TOP METRIC ROW (VISIBLE WITHOUT SCROLLING)
 # -----------------------------------------------------------------------------
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-title">Current SoH</div>
+        <div class="kpi-title">Current Health (SoH)</div>
         <div class="kpi-value">{current_soh:.1f}%</div>
     </div>
     """, unsafe_allow_html=True)
@@ -221,34 +286,33 @@ with col1:
 with col2:
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-title">Likely RUL</div>
-        <div class="kpi-value">{rul_likely} <span style="font-size: 1rem; color: #94a3b8;">cycles</span></div>
+        <div class="kpi-title">Likely Remaining Life</div>
+        <div class="kpi-value">{rul_likely} <span class="kpi-subtext">cycles</span></div>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-title">Primary Cell Driver</div>
-        <div class="kpi-value" style="font-size: 1.05rem; margin-top: 8px;">{top_feat_name}</div>
+        <div class="kpi-title">Primary Cell Stressor</div>
+        <div class="kpi-value" style="font-size: 1.1rem; margin-top: 6px; color: #38bdf8;">{top_feat_name}</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col4:
-    badge_class = "badge-healthy" if status_label == "Healthy" else ("badge-monitor" if status_label == "Monitor Closely" else "badge-replace")
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-title">Status Classification</div>
-        <div style="margin-top: 10px;"><span class="{badge_class}">{status_label}</span></div>
+        <div class="kpi-title">Risk Classification</div>
+        <div style="margin-top: 8px;"><span class="badge-pill {badge_class}">{status_label}</span></div>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 5. CHART 1: SOH DECAY TREND (REAL DATA & CONFIDENCE BAND)
+# 6. CHART 1: SOH DECAY TRAJECTORY
 # -----------------------------------------------------------------------------
-st.subheader("📉 State-of-Health (SoH) Decay Trajectory")
+st.markdown('<div class="section-header">📉 State-of-Health (SoH) Decay Trajectory</div>', unsafe_allow_html=True)
 
 fig_soh = go.Figure()
 
@@ -256,11 +320,11 @@ fig_soh.add_trace(go.Scatter(
     x=pd.concat([df_cell['cycle_id'], df_cell['cycle_id'][::-1]]),
     y=pd.concat([df_cell['soh_upper'], df_cell['soh_lower'][::-1]]),
     fill='toself',
-    fillcolor='rgba(99, 102, 241, 0.15)',
+    fillcolor='rgba(99, 102, 241, 0.12)',
     line=dict(color='rgba(255,255,255,0)'),
     hoverinfo="skip",
     showlegend=True,
-    name='Model Confidence Interval'
+    name='Model 95% Confidence Interval'
 ))
 
 fig_soh.add_trace(go.Scatter(
@@ -268,6 +332,7 @@ fig_soh.add_trace(go.Scatter(
     y=df_cell['soh_ground_truth'],
     mode='lines',
     name='Ground Truth SoH',
+    hovertemplate='<b>Cycle %{x}</b><br>Ground Truth: %{y:.2f}%<extra></extra>',
     line=dict(color='#38bdf8', width=2, dash='dash')
 ))
 
@@ -275,30 +340,48 @@ fig_soh.add_trace(go.Scatter(
     x=df_cell['cycle_id'],
     y=df_cell['soh_predicted'],
     mode='lines',
-    name='Model Predicted SoH',
+    name='Predicted SoH (Model)',
+    hovertemplate='<b>Cycle %{x}</b><br>Predicted SoH: %{y:.2f}%<extra></extra>',
     line=dict(color='#818cf8', width=3)
 ))
 
-fig_soh.add_hline(y=80.0, line_dash="dash", line_color="#ef4444", annotation_text="80% End-of-Life Threshold", annotation_position="bottom right")
+fig_soh.add_hline(
+    y=80.0, 
+    line_dash="dash", 
+    line_color="#ef4444", 
+    annotation_text="80% End-of-Life Threshold", 
+    annotation_position="bottom right",
+    annotation_font=dict(color="#fca5a5", size=11)
+)
 
 fig_soh.update_layout(
     template="plotly_dark",
-    xaxis_title="Cycle Count",
-    yaxis_title="State-of-Health (%)",
-    height=380,
-    margin=dict(l=20, r=20, t=30, b=20),
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(15, 23, 42, 0.6)',
+    xaxis=dict(
+        title="Cycle Count", 
+        gridcolor='rgba(255,255,255,0.05)',
+        zerolinecolor='rgba(255,255,255,0.1)'
+    ),
+    yaxis=dict(
+        title="State-of-Health (%)", 
+        gridcolor='rgba(255,255,255,0.05)',
+        zerolinecolor='rgba(255,255,255,0.1)'
+    ),
+    height=370,
+    margin=dict(l=20, r=20, t=20, b=20),
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
 )
 
 st.plotly_chart(fig_soh, width='stretch')
 
 # -----------------------------------------------------------------------------
-# 6. CHARTS ROW 2: PER-CELL DRIVER IMPORTANCE & REAL RUL BANDS
+# 7. CHARTS ROW 2: PER-CELL DRIVERS & RUL UNCERTAINTY BANDS
 # -----------------------------------------------------------------------------
 col_chart1, col_chart2 = st.columns(2)
 
 with col_chart1:
-    st.subheader("📊 Key Degradation Drivers (Cell-Specific)")
+    st.markdown('<div class="section-header">📊 Cell Stressor Importance Breakdown</div>', unsafe_allow_html=True)
     if cell_scores_dict:
         driver_df_cell = pd.DataFrame(list(cell_scores_dict.items()), columns=['Feature', 'Importance'])
         driver_df_cell['clean_name'] = driver_df_cell['Feature'].str.replace('_', ' ').str.title()
@@ -311,24 +394,32 @@ with col_chart1:
         x=driver_df_cell['Importance'],
         y=driver_df_cell['clean_name'],
         orientation='h',
+        hovertemplate='<b>%{y}</b><br>Importance: %{x:.2%}<extra></extra>',
         marker=dict(
             color=driver_df_cell['Importance'],
-            colorscale='Viridis'
+            colorscale=[[0, '#312e81'], [0.5, '#6366f1'], [1, '#38bdf8']],
+            line=dict(color='rgba(255,255,255,0.1)', width=1)
         )
     ))
     fig_driver.update_layout(
         template="plotly_dark",
-        xaxis_title="Relative Feature Importance Score",
-        yaxis=dict(autorange="reversed"),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(15, 23, 42, 0.6)',
+        xaxis=dict(
+            title="Relative Stress Contribution", 
+            tickformat='.0%',
+            gridcolor='rgba(255,255,255,0.05)'
+        ),
+        yaxis=dict(autorange="reversed", gridcolor='rgba(255,255,255,0.05)'),
         height=300,
-        margin=dict(l=20, r=20, t=30, b=20)
+        margin=dict(l=20, r=20, t=20, b=20)
     )
     st.plotly_chart(fig_driver, width='stretch')
 
 with col_chart2:
-    st.subheader("⏳ Remaining Useful Life (RUL) Uncertainty Bands")
+    st.markdown('<div class="section-header">⏳ RUL Uncertainty Boundaries</div>', unsafe_allow_html=True)
     rul_chart_df = pd.DataFrame({
-        'Scenario': ['Worst Case (P10)', 'Likely (P50)', 'Best Case (P90)'],
+        'Scenario': ['Conservative (P10)', 'Likely (P50)', 'Optimistic (P90)'],
         'Cycles': [rul_worst, rul_likely, rul_best],
         'Color': ['#ef4444', '#f59e0b', '#10b981']
     })
@@ -338,20 +429,32 @@ with col_chart2:
         y=rul_chart_df['Cycles'],
         text=rul_chart_df['Cycles'].astype(str) + " cycles",
         textposition='auto',
-        marker_color=rul_chart_df['Color']
+        hovertemplate='<b>%{x}</b><br>Remaining: %{y} cycles<extra></extra>',
+        marker=dict(
+            color=rul_chart_df['Color'],
+            line=dict(color='rgba(255,255,255,0.15)', width=1)
+        )
     ))
     fig_rul.update_layout(
         template="plotly_dark",
-        yaxis_title="Estimated Cycles to 80% SoH",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(15, 23, 42, 0.6)',
+        yaxis=dict(title="Cycles to 80% Threshold", gridcolor='rgba(255,255,255,0.05)'),
+        xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
         height=300,
-        margin=dict(l=20, r=20, t=30, b=20)
+        margin=dict(l=20, r=20, t=20, b=20)
     )
     st.plotly_chart(fig_rul, width='stretch')
 
 # -----------------------------------------------------------------------------
-# 7. AI SAFETY-AWARE NARRATIVE GENERATOR (LOCAL OLLAMA INTEGRATION)
+# 8. AI SAFETY NARRATIVE DIAGNOSTIC SUMMARY
 # -----------------------------------------------------------------------------
-st.subheader("🤖 AI Safety-Aware Operator Diagnostic Summary")
+st.markdown(f'''
+<div class="section-header">
+    🤖 AI Safety Diagnostic Summary
+    <span class="badge-pill {badge_class}" style="margin-left: auto;">{status_label}</span>
+</div>
+''', unsafe_allow_html=True)
 
 @st.cache_data(show_spinner=False)
 def fetch_real_narrative(soh_v, slope_v, driver_str, r_best, r_likely, r_worst):
@@ -364,9 +467,34 @@ def fetch_real_narrative(soh_v, slope_v, driver_str, r_best, r_likely, r_worst):
         rul_worst_cycles=int(r_worst)
     )
 
-with st.spinner("🤖 Generating safety-aware narrative via local Ollama model (llama3.2:3b)..."):
+with st.spinner("🤖 Generating safety-aware operator report via local LLM..."):
     narrative_output = fetch_real_narrative(
         current_soh, slope_val, top_feat_name, rul_best, rul_likely, rul_worst
     )
 
-st.info(narrative_output)
+st.markdown(f'<div class="narrative-box">{narrative_output}</div>', unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 9. EXPANDABLE TECHNICAL DETAILS (INTERACTIVE TOUCHES)
+# -----------------------------------------------------------------------------
+with st.expander("🔬 Telemetry & Physics Degradation Model Parameters"):
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        st.markdown("""
+        **Degradation Physics Model Assumptions**:
+        - **Thermal Stress Gate**: Degradation accelerates when temperature $> 40^\circ\text{C}$.
+        - **C-Rate Current Density**: High rate charging ($>0.8\text{ C}$) drives lithium plating risk.
+        - **Depth of Discharge (DoD)**: Deep cycling below $20\%\text{ SoC}$ expands mechanical lattice strain.
+        """)
+    with col_t2:
+        st.markdown(f"""
+        **Cell `{selected_cell}` Trajectory Breakdown**:
+        - Trajectory Window: `{len(df_cell)} cycles`
+        - Current SoH Estimate: `{current_soh:.2f}%`
+        - Baseline Decline Rate: `{slope_val:.5f}% / cycle`
+        - Primary Degradation Cause: `{top_feat_name}`
+        """)
+
+with st.expander("📋 Raw Telemetry Data Table"):
+    st.dataframe(df_cell.tail(20), use_container_width=True)
