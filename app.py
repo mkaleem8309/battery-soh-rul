@@ -19,15 +19,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Consolidated CSS design system (Modern UI patterns, glassmorphism, entrance animations)
+# Consolidated CSS design system (Step 1 Typography & Step 2 Dark Fintech Color Palette)
 st.markdown("""
 <style>
-    /* System font stack & base dark theme background */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap');
+
+    /* Global typography & fintech dark theme background (#0a0e14) */
     html, body, [class*="css"] {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     .stApp {
-        background-color: #080c14;
+        background-color: #0a0e14;
         color: #f8fafc;
     }
     
@@ -35,7 +37,7 @@ st.markdown("""
     @keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(10px);
         }
         to {
             opacity: 1;
@@ -43,94 +45,141 @@ st.markdown("""
         }
     }
     .main-animated-container {
-        animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
-    /* Top Disclaimer Banner */
+    /* Top Disclaimer Banner (Softened Hairline Style) */
     .disclaimer-banner {
-        background: linear-gradient(90deg, rgba(185, 28, 28, 0.25) 0%, rgba(153, 27, 27, 0.15) 100%);
-        border: 1px solid #ef4444;
-        border-radius: 10px;
-        padding: 12px 20px;
+        background: #12151c;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-left: 3px solid #ef4444;
+        border-radius: 8px;
+        padding: 12px 18px;
         margin-bottom: 20px;
-        color: #fca5a5;
+        color: #94a3b8;
         font-weight: 500;
-        font-size: 0.92rem;
+        font-size: 0.90rem;
         display: flex;
         align-items: center;
         gap: 12px;
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+    }
+    .disclaimer-banner strong {
+        color: #ef4444;
     }
     
     /* Top Header Energy Banner Graphic */
     .header-banner {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%),
-                    radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%);
-        border: 1px solid rgba(56, 189, 248, 0.2);
-        border-radius: 14px;
+        background: #12151c;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
         padding: 22px 26px;
         margin-bottom: 24px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
     .header-title {
-        font-size: 1.8rem;
+        font-family: 'Outfit', 'Inter', sans-serif;
+        font-size: 2.1rem;
         font-weight: 800;
-        letter-spacing: -0.02em;
-        background: linear-gradient(90deg, #f8fafc 0%, #38bdf8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.03em;
+        color: #f8fafc;
         margin-bottom: 4px;
     }
     .header-subtitle {
-        color: #94a3b8;
-        font-size: 0.95rem;
+        color: #64748b;
+        font-size: 0.92rem;
         font-weight: 500;
+        letter-spacing: -0.01em;
     }
 
-    /* Cell Selector Card Grid / Carousel styling */
+    /* Pill-Style Toggles & Selector Styling */
+    .pill-group {
+        background: #12151c;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 30px;
+        padding: 4px;
+        display: inline-flex;
+        gap: 4px;
+        margin-bottom: 18px;
+    }
+    .pill-option {
+        padding: 6px 18px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .pill-active {
+        background: #3b82f6;
+        color: #ffffff;
+        box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Status-Specific Active Carousel Button CSS Overrides */
+    .cell-pill-active-healthy button {
+        background-color: rgba(21, 128, 61, 0.25) !important;
+        border: 1px solid #22c55e !important;
+        color: #86efac !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.3) !important;
+    }
+    .cell-pill-active-monitor button {
+        background-color: rgba(180, 83, 9, 0.25) !important;
+        border: 1px solid #f59e0b !important;
+        color: #fde047 !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.3) !important;
+    }
+    .cell-pill-active-replace button {
+        background-color: rgba(185, 28, 28, 0.25) !important;
+        border: 1px solid #ef4444 !important;
+        color: #fca5a5 !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.3) !important;
+    }
+
+    /* Cell Selector Card Grid / Carousel styling (Rounded Pill Cards) */
     .carousel-container {
         display: flex;
         gap: 12px;
         overflow-x: auto;
         padding: 6px 2px 14px 2px;
         scrollbar-width: thin;
-        scrollbar-color: #334155 #0f172a;
+        scrollbar-color: #334155 #0a0e14;
     }
     .cell-card {
-        background: rgba(30, 41, 59, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 12px 14px;
+        background: #12151c;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 20px;
+        padding: 10px 16px;
         min-width: 130px;
         text-align: center;
         cursor: pointer;
-        transition: all 0.25s ease;
+        transition: all 0.2s ease;
     }
     .cell-card:hover {
-        transform: translateY(-3px);
-        border-color: #38bdf8;
-        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.15);
+        transform: translateY(-2px);
+        border-color: #3b82f6;
     }
     .cell-card-active {
-        background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
-        border: 2px solid #38bdf8 !important;
-        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.25);
+        background: #181d28;
+        border: 1px solid #3b82f6 !important;
     }
 
-    /* KPI Metric Cards */
+    /* KPI Metric Cards (Restrained Depth, Hairline Borders, Electric Blue Accent #3b82f6) */
     .kpi-card {
-        background: linear-gradient(145deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 14px;
-        padding: 18px 16px;
+        background: #12151c;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 20px 16px;
         text-align: center;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        transition: border-color 0.2s ease, transform 0.2s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
     .kpi-card:hover {
-        transform: translateY(-3px);
-        border-color: rgba(56, 189, 248, 0.4);
-        box-shadow: 0 8px 30px rgba(56, 189, 248, 0.15);
+        transform: translateY(-2px);
+        border-color: rgba(59, 130, 246, 0.4);
     }
     .kpi-header-row {
         display: flex;
@@ -140,25 +189,27 @@ st.markdown("""
         margin-bottom: 8px;
     }
     .kpi-title {
-        color: #94a3b8;
-        font-size: 0.76rem;
+        color: #64748b;
+        font-size: 0.75rem;
         font-weight: 700;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
     }
     .kpi-value {
-        color: #f8fafc;
-        font-size: 1.9rem;
+        font-family: 'Outfit', 'Inter', sans-serif;
+        color: #3b82f6;
+        font-size: 2.3rem;
         font-weight: 800;
-        line-height: 1.2;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
     }
     .kpi-subtext {
         font-size: 0.85rem;
-        color: #94a3b8;
+        color: #64748b;
         font-weight: 500;
     }
     
-    /* Status Badges */
+    /* Functionally Meaningful Status Badges */
     .badge-pill {
         display: inline-block;
         padding: 4px 14px;
@@ -167,8 +218,100 @@ st.markdown("""
         font-weight: 700;
         letter-spacing: 0.02em;
         text-align: center;
+    }
+    .badge-healthy {
+        background-color: rgba(21, 128, 61, 0.2);
+        border: 1px solid #22c55e;
+        color: #86efac;
+    }
+    .badge-monitor {
+        background-color: rgba(180, 83, 9, 0.2);
+        border: 1px solid #f59e0b;
+        color: #fde047;
+    }
+    .badge-replace {
+        background-color: rgba(185, 28, 28, 0.2);
+        border: 1px solid #ef4444;
+        color: #fca5a5;
+    }
+
+    /* Section Subheaders */
+    .section-header {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.12rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #f8fafc;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Narrative Info Box styling */
+    .narrative-box {
+        background: #12151c;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-left: 3px solid #3b82f6;
+        border-radius: 8px;
+        padding: 20px 24px;
+        color: #cbd5e1;
+        font-size: 0.98rem;
+        line-height: 1.65;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-align: center;
         transition: all 0.25s ease;
     }
+
+    /* Step 5 Custom Animated AI Thinking Pulse Orb Loading State */
+    @keyframes aiPulseOrb {
+        0% {
+            transform: scale(0.92);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        }
+        70% {
+            transform: scale(1.08);
+            box-shadow: 0 0 0 18px rgba(59, 130, 246, 0);
+        }
+        100% {
+            transform: scale(0.92);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+        }
+    }
+    .ai-thinking-container {
+        background: #12151c;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-left: 3px solid #3b82f6;
+        border-radius: 8px;
+        padding: 28px 24px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+    }
+    .ai-thinking-orb {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #3b82f6;
+        animation: aiPulseOrb 1.8s infinite ease-in-out;
+    }
+    .ai-thinking-text {
+        font-family: 'Inter', sans-serif;
+        color: #94a3b8;
+        font-size: 0.92rem;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        line-height: 1.5;
+    }
+    .ai-thinking-text strong {
+        color: #f8fafc;
+        font-weight: 700;
+    }
+
     .badge-healthy {
         background-color: rgba(21, 128, 61, 0.3);
         border: 1px solid #22c55e;
@@ -290,6 +433,59 @@ cell_list = sorted(df_all['cell_id'].unique().tolist())
 if "selected_cell" not in st.session_state:
     st.session_state["selected_cell"] = cell_list[0]
 
+active_cell_id = st.session_state["selected_cell"]
+c_rul_active = df_rul[df_rul['cell_id'] == active_cell_id]
+if len(c_rul_active) > 0:
+    act_soh = float(c_rul_active.iloc[0]['current_soh'])
+    act_rul = int(c_rul_active.iloc[0]['rul_likely_cycles'])
+    act_slope = float(c_rul_active.iloc[0]['trend_slope'])
+else:
+    act_soh, act_rul, act_slope = 90.0, 500, -0.01
+
+if act_soh <= 80.0 or act_rul <= 50:
+    act_bg = "rgba(185, 28, 28, 0.35)"
+    act_border = "#ef4444"
+    act_text = "#fca5a5"
+    act_glow = "rgba(239, 68, 68, 0.45)"
+elif act_soh <= 85.0 or act_slope <= -0.05:
+    act_bg = "rgba(180, 83, 9, 0.35)"
+    act_border = "#f59e0b"
+    act_text = "#fde047"
+    act_glow = "rgba(245, 158, 11, 0.45)"
+else:
+    act_bg = "rgba(21, 128, 61, 0.35)"
+    act_border = "#22c55e"
+    act_text = "#86efac"
+    act_glow = "rgba(34, 197, 94, 0.45)"
+
+# Inject strict dynamic CSS rule targeting Streamlit's native stBaseButton-primary
+st.markdown(f"""
+<style>
+    button[data-testid="stBaseButton-primary"],
+    div.stButton > button[data-testid="stBaseButton-primary"] {{
+        background-color: {act_bg} !important;
+        border: 1.5px solid {act_border} !important;
+        color: {act_text} !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 14px {act_glow} !important;
+    }}
+    button[data-testid="stBaseButton-primary"] p,
+    button[data-testid="stBaseButton-primary"] span {{
+        color: {act_text} !important;
+        font-weight: 700 !important;
+    }}
+    button[data-testid="stBaseButton-secondary"] {{
+        background-color: #12151c !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        color: #94a3b8 !important;
+    }}
+    button[data-testid="stBaseButton-secondary"]:hover {{
+        border-color: #3b82f6 !important;
+        color: #f8fafc !important;
+    }}
+</style>
+""", unsafe_allow_html=True)
+
 st.markdown('<div class="section-header">📱 Interactive Battery Cell Selector</div>', unsafe_allow_html=True)
 
 # Render interactive cell cards in a clean horizontal grid (carousel cards)
@@ -312,20 +508,17 @@ for i, c_id in enumerate(cell_list):
 
     if c_soh <= 80.0 or c_rul_cycles <= 50:
         c_status = "Replace"
-        c_color = "#ef4444"
         c_icon = "🔴"
     elif c_soh <= 85.0 or c_slope <= -0.05:
         c_status = "Monitor"
-        c_color = "#f59e0b"
         c_icon = "🟡"
     else:
         c_status = "Healthy"
-        c_color = "#22c55e"
         c_icon = "🟢"
 
     is_selected = (c_id == st.session_state["selected_cell"])
-    btn_label = f"{c_icon} {c_id}\n{c_soh:.1f}% ({c_status})"
-    
+    btn_label = f"{c_icon} {c_id} ({c_soh:.1f}%)"
+            
     with card_cols[col_idx]:
         if st.button(
             btn_label,
@@ -391,23 +584,24 @@ top_feat_name = cell_top_driver.replace('_', ' ').title()
 if current_soh <= 80.0 or rul_likely <= 50:
     status_label = "Replace Soon"
     badge_class = "badge-replace"
+    avatar_icon = "🔴"
 elif current_soh <= 85.0 or slope_val <= -0.05:
     status_label = "Monitor Closely"
     badge_class = "badge-monitor"
+    avatar_icon = "🟡"
 else:
     status_label = "Healthy"
     badge_class = "badge-healthy"
+    avatar_icon = "🟢"
 
 # Continuous SoH Color Gradient calculation (Emerald -> Amber -> Red)
 soh_norm = np.clip((current_soh - 80.0) / 20.0, 0.0, 1.0)
 if soh_norm >= 0.5:
-    # 90% to 100% (Amber to Emerald)
     factor = (soh_norm - 0.5) * 2.0
     r_val = int(245 * (1 - factor) + 34 * factor)
     g_val = int(158 * (1 - factor) + 197 * factor)
     b_val = int(11 * (1 - factor) + 94 * factor)
 else:
-    # 80% to 90% (Red to Amber)
     factor = soh_norm * 2.0
     r_val = int(239 * (1 - factor) + 245 * factor)
     g_val = int(68 * (1 - factor) + 158 * factor)
@@ -415,12 +609,40 @@ else:
 
 soh_gradient_color = f"rgb({r_val}, {g_val}, {b_val})"
 
+# Step 7 Pop-Up / Modal Detail View via st.dialog
+@st.dialog("🔍 Comprehensive Cell Telemetry & Model Details")
+def show_cell_details_dialog(c_id, df_c, r_row):
+    st.markdown(f"### 🔋 Battery Cell `{c_id}` Deep-Dive Diagnostics")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("Total Cycles Monitored", f"{len(df_c)}")
+        st.metric("Initial SoH", f"{df_c['soh_ground_truth'].iloc[0]:.2f}%")
+    with c2:
+        st.metric("Latest SoH", f"{df_c['soh_predicted'].iloc[-1]:.2f}%")
+        st.metric("Decline Velocity", f"{float(r_row['trend_slope'].iloc[0]) if len(r_row) > 0 else 0.0:.5f}%/cycle")
+    with c3:
+        st.metric("Likely RUL", f"{int(r_row['rul_likely_cycles'].iloc[0]) if len(r_row) > 0 else 0} cycles")
+        st.metric("P10-P90 RUL Spread", f"{int(r_row['rul_worst_cycles'].iloc[0]) if len(r_row) > 0 else 0} – {int(r_row['rul_best_cycles'].iloc[0]) if len(r_row) > 0 else 0}")
+    
+    st.markdown("---")
+    st.markdown("#### ⚙️ Feature Stressors & Physics Model Assumptions")
+    top_d = r_row['top_driver'].iloc[0] if len(r_row) > 0 else "cumulative_time_above_40C"
+    st.write(f"**Primary Degradation Stressor**: `{top_d}`")
+    st.write("**Physics Degradation Engine**: Exponential decay ($k \\in [0.9, 1.1] \\times k_{base}$), thermal stress gate ($T > 40^\\circ\\text{C}$), high C-rate acceleration ($C > 1.5$).")
+    
+    st.markdown("---")
+    st.markdown("#### 📊 Telemetry Snapshot (First 5 & Last 5 Cycles)")
+    snap_df = pd.concat([df_c.head(5), df_c.tail(5)])
+    st.dataframe(snap_df[['cycle_id', 'soh_predicted', 'temp_max', 'c_rate', 'discharge_depth']], use_container_width=True)
+
 st.sidebar.markdown("---")
 st.sidebar.subheader("📋 Active Cell Profile")
-st.sidebar.write(f"**Cell Identifier**: `{selected_cell}`")
+st.sidebar.write(f"**Cell Identifier**: {avatar_icon} `{selected_cell}`")
 st.sidebar.write(f"**Telemetry History**: `{len(df_cell)} cycles`")
 st.sidebar.write(f"**Decline Velocity**: `{slope_val:.5f}% / cycle`")
 st.sidebar.write(f"**Status Tier**: <span class=\"badge-pill {badge_class}\">{status_label}</span>", unsafe_allow_html=True)
+if st.sidebar.button("🔍 View Cell Telemetry Details", use_container_width=True):
+    show_cell_details_dialog(selected_cell, df_cell, cell_rul_row)
 
 # -----------------------------------------------------------------------------
 # 6. MAIN ANIMATED CONTAINER & KPI SUMMARY ROW WITH LOCAL SVG ICONS
@@ -473,9 +695,11 @@ with col4:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 7. CHART 1: SOH DECAY TRAJECTORY
+# 7. CHART 1: SOH DECAY TRAJECTORY (Step 4 Dark Floating Card Hover Popups)
 # -----------------------------------------------------------------------------
 st.markdown('<div class="section-header">📉 State-of-Health (SoH) Decay Trajectory</div>', unsafe_allow_html=True)
+
+df_cell['soh_delta'] = df_cell['soh_predicted'].diff().fillna(0.0)
 
 fig_soh = go.Figure()
 
@@ -483,7 +707,7 @@ fig_soh.add_trace(go.Scatter(
     x=pd.concat([df_cell['cycle_id'], df_cell['cycle_id'][::-1]]),
     y=pd.concat([df_cell['soh_upper'], df_cell['soh_lower'][::-1]]),
     fill='toself',
-    fillcolor='rgba(99, 102, 241, 0.12)',
+    fillcolor='rgba(59, 130, 246, 0.12)',
     line=dict(color='rgba(255,255,255,0)'),
     hoverinfo="skip",
     showlegend=True,
@@ -495,8 +719,8 @@ fig_soh.add_trace(go.Scatter(
     y=df_cell['soh_ground_truth'],
     mode='lines',
     name='Ground Truth SoH',
-    hovertemplate='<b>Cycle %{x}</b><br>Ground Truth: %{y:.2f}%<extra></extra>',
-    line=dict(color='#38bdf8', width=2, dash='dash')
+    hovertemplate='<b>Cycle %{x}</b><br>Ground Truth: <b>%{y:.2f}%</b><extra></extra>',
+    line=dict(color='#94a3b8', width=2, dash='dash')
 ))
 
 fig_soh.add_trace(go.Scatter(
@@ -504,8 +728,9 @@ fig_soh.add_trace(go.Scatter(
     y=df_cell['soh_predicted'],
     mode='lines',
     name='Predicted SoH (Model)',
-    hovertemplate='<b>Cycle %{x}</b><br>Predicted SoH: %{y:.2f}%<extra></extra>',
-    line=dict(color='#818cf8', width=3)
+    customdata=np.stack((df_cell['soh_delta'],), axis=-1),
+    hovertemplate='<b>Cycle %{x}</b><br>Predicted SoH: <b>%{y:.2f}%</b><br><span style="color:#3b82f6; font-weight:700;">Delta: %{customdata[0]:+.3f}% / cycle</span><extra></extra>',
+    line=dict(color='#3b82f6', width=3)
 ))
 
 fig_soh.add_hline(
@@ -520,16 +745,23 @@ fig_soh.add_hline(
 fig_soh.update_layout(
     template="plotly_dark",
     paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(15, 23, 42, 0.6)',
+    plot_bgcolor='#12151c',
+    hoverlabel=dict(
+        bgcolor="#12151c",
+        bordercolor="rgba(255,255,255,0.12)",
+        font_size=13,
+        font_family="Inter, sans-serif",
+        font_color="#f8fafc"
+    ),
     xaxis=dict(
         title="Cycle Count", 
-        gridcolor='rgba(255,255,255,0.05)',
-        zerolinecolor='rgba(255,255,255,0.1)'
+        gridcolor='rgba(255,255,255,0.04)',
+        zerolinecolor='rgba(255,255,255,0.08)'
     ),
     yaxis=dict(
         title="State-of-Health (%)", 
-        gridcolor='rgba(255,255,255,0.05)',
-        zerolinecolor='rgba(255,255,255,0.1)'
+        gridcolor='rgba(255,255,255,0.04)',
+        zerolinecolor='rgba(255,255,255,0.08)'
     ),
     height=370,
     margin=dict(l=20, r=20, t=20, b=20),
@@ -557,23 +789,30 @@ with col_chart1:
         x=driver_df_cell['Importance'],
         y=driver_df_cell['clean_name'],
         orientation='h',
-        hovertemplate='<b>%{y}</b><br>Importance: %{x:.2%}<extra></extra>',
+        hovertemplate='<b>%{y}</b><br>Importance: <b>%{x:.2%}</b><extra></extra>',
         marker=dict(
             color=driver_df_cell['Importance'],
-            colorscale=[[0, '#312e81'], [0.5, '#6366f1'], [1, '#38bdf8']],
-            line=dict(color='rgba(255,255,255,0.1)', width=1)
+            colorscale=[[0, '#1e293b'], [0.5, '#2563eb'], [1, '#3b82f6']],
+            line=dict(color='rgba(255,255,255,0.08)', width=1)
         )
     ))
     fig_driver.update_layout(
         template="plotly_dark",
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(15, 23, 42, 0.6)',
+        plot_bgcolor='#12151c',
+        hoverlabel=dict(
+            bgcolor="#12151c",
+            bordercolor="rgba(255,255,255,0.12)",
+            font_size=13,
+            font_family="Inter, sans-serif",
+            font_color="#f8fafc"
+        ),
         xaxis=dict(
             title="Relative Stress Contribution", 
             tickformat='.0%',
-            gridcolor='rgba(255,255,255,0.05)'
+            gridcolor='rgba(255,255,255,0.04)'
         ),
-        yaxis=dict(autorange="reversed", gridcolor='rgba(255,255,255,0.05)'),
+        yaxis=dict(autorange="reversed", gridcolor='rgba(255,255,255,0.04)'),
         height=300,
         margin=dict(l=20, r=20, t=20, b=20)
     )
@@ -584,7 +823,7 @@ with col_chart2:
     rul_chart_df = pd.DataFrame({
         'Scenario': ['Conservative (P10)', 'Likely (P50)', 'Optimistic (P90)'],
         'Cycles': [rul_worst, rul_likely, rul_best],
-        'Color': ['#ef4444', '#f59e0b', '#10b981']
+        'Color': ['#ef4444', '#f59e0b', '#22c55e']
     })
     
     fig_rul = go.Figure(go.Bar(
@@ -592,25 +831,32 @@ with col_chart2:
         y=rul_chart_df['Cycles'],
         text=rul_chart_df['Cycles'].astype(str) + " cycles",
         textposition='auto',
-        hovertemplate='<b>%{x}</b><br>Remaining: %{y} cycles<extra></extra>',
+        hovertemplate='<b>%{x}</b><br>Remaining: <b>%{y} cycles</b><extra></extra>',
         marker=dict(
             color=rul_chart_df['Color'],
-            line=dict(color='rgba(255,255,255,0.15)', width=1)
+            line=dict(color='rgba(255,255,255,0.12)', width=1)
         )
     ))
     fig_rul.update_layout(
         template="plotly_dark",
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(15, 23, 42, 0.6)',
-        yaxis=dict(title="Cycles to 80% Threshold", gridcolor='rgba(255,255,255,0.05)'),
-        xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+        plot_bgcolor='#12151c',
+        hoverlabel=dict(
+            bgcolor="#12151c",
+            bordercolor="rgba(255,255,255,0.12)",
+            font_size=13,
+            font_family="Inter, sans-serif",
+            font_color="#f8fafc"
+        ),
+        yaxis=dict(title="Cycles to 80% Threshold", gridcolor='rgba(255,255,255,0.04)'),
+        xaxis=dict(gridcolor='rgba(255,255,255,0.04)'),
         height=300,
         margin=dict(l=20, r=20, t=20, b=20)
     )
     st.plotly_chart(fig_rul, width='stretch')
 
 # -----------------------------------------------------------------------------
-# 9. AI SAFETY NARRATIVE DIAGNOSTIC SUMMARY
+# 9. AI SAFETY NARRATIVE DIAGNOSTIC SUMMARY (Step 5 Animated AI Thinking State)
 # -----------------------------------------------------------------------------
 st.markdown(f'''
 <div class="section-header">
@@ -631,10 +877,21 @@ def fetch_real_narrative(soh_v, slope_v, driver_str, r_best, r_likely, r_worst):
         model_name='llama3.2:3b'
     )
 
-with st.spinner("🤖 Generating safety-aware operator report via local LLM..."):
-    narrative_output = fetch_real_narrative(
-        current_soh, slope_val, top_feat_name, rul_best, rul_likely, rul_worst
-    )
+narrative_placeholder = st.empty()
+narrative_placeholder.markdown('''
+<div class="ai-thinking-container">
+    <div class="ai-thinking-orb"></div>
+    <div class="ai-thinking-text">
+        <strong>AI Assistant is analyzing this cell...</strong><br>
+        Synthesizing telemetry history, stress drivers, and risk guardrails
+    </div>
+</div>
+''', unsafe_allow_html=True)
+
+narrative_output = fetch_real_narrative(
+    current_soh, slope_val, top_feat_name, rul_best, rul_likely, rul_worst
+)
+narrative_placeholder.empty()
 
 st.markdown(f'<div class="narrative-box">{narrative_output}</div>', unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
