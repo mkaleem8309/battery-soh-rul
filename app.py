@@ -388,6 +388,20 @@ def load_pipeline_data():
             df_features = ft.make_mock_data()
     else:
         df_features = pd.read_csv(features_file)
+
+    # Restore temperature_max from raw telemetry dataset if not already in features
+    synthetic_file = os.path.join('data', 'synthetic_battery_data.csv')
+    if os.path.exists(synthetic_file) and 'temperature_max' not in df_features.columns:
+        try:
+            raw_df = pd.read_csv(synthetic_file)
+            if 'temperature_max' in raw_df.columns:
+                df_features = df_features.merge(
+                    raw_df[['cell_id', 'cycle_id', 'temperature_max']],
+                    on=['cell_id', 'cycle_id'],
+                    how='left'
+                )
+        except Exception:
+            pass
         
     drivers_file = os.path.join('outputs', 'feature_importances.csv')
     if os.path.exists(drivers_file):
@@ -654,7 +668,7 @@ def show_cell_details_dialog(c_id, df_c, r_row):
     
     try:
         snap_df = pd.concat([df_c.head(5), df_c.tail(5)])
-        target_cols = ['cycle_id', 'soh_predicted', 'cumulative_time_above_40C', 'c_rate', 'discharge_depth']
+        target_cols = ['cycle_id', 'soh_predicted', 'temperature_max', 'cumulative_time_above_40C', 'c_rate', 'discharge_depth']
         valid_cols = [c for c in target_cols if c in snap_df.columns]
         
         if valid_cols:
