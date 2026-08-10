@@ -63,8 +63,14 @@ Ensure no unsafe operational fixes or BMS overrides are mentioned.
             options={'temperature': 0.1}
         )
         return response['message']['content'].strip()
-    except Exception as e:
-        return f"[Fallback Status: {recommended_status}] Cell SoH is {current_soh:.1f}%. Top driver is {top_driver}. RUL estimated at {rul_likely_cycles} cycles ({rul_worst_cycles}-{rul_best_cycles}). (Error calling LLM: {str(e)})"
+    except Exception:
+        return (
+            f"**Diagnostic Summary (Deterministic Telemetry Fallback)**\n\n"
+            f"Cell operational status is classified as **{recommended_status}** with a current State-of-Health of **{current_soh:.1f}%**. "
+            f"The primary degradation driver is **{top_driver}**, with an estimated Remaining Useful Life (RUL) of **{rul_likely_cycles} cycles** "
+            f"(uncertainty range: {rul_worst_cycles} to {rul_best_cycles} cycles).\n\n"
+            f"*Note: AI narrative service operating in offline telemetry fallback mode.*"
+        )
 
 
 if __name__ == '__main__':

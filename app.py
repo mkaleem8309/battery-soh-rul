@@ -464,7 +464,8 @@ def fetch_real_narrative(soh_v, slope_v, driver_str, r_best, r_likely, r_worst):
         top_driver=str(driver_str),
         rul_best_cycles=int(r_best),
         rul_likely_cycles=int(r_likely),
-        rul_worst_cycles=int(r_worst)
+        rul_worst_cycles=int(r_worst),
+        model_name='llama3.2:3b'
     )
 
 with st.spinner("🤖 Generating safety-aware operator report via local LLM..."):
