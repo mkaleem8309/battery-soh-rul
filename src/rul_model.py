@@ -52,6 +52,11 @@ MIN_SLOPE_MAGNITUDE = 0.005 # %/cycle -- below this, decline signal is indisting
                              # from noise; don't extrapolate off it (avoids e.g. a
                              # near-zero slope producing a "1.3 million cycle" RUL)
 MAX_REASONABLE_RUL = 5000   # cycles -- hard cap as a second line of defense
+NEAR_EOL_MARGIN = 5.0       # percentage points of SoH above threshold
+MAX_REASONABLE_RUL_NEAR_EOL = 500  # tighter cap for cells already close to threshold --
+                             # a flat *recent* slope there is weak evidence of real
+                             # safety margin, since noise or a short plateau can look
+                             # identical to genuine stabilization this close to EOL
 
 SOH_PREDICTIONS_PATH = "outputs/soh_predictions.csv"
 RUL_OUTPUT_PATH = "outputs/rul_predictions.csv"
@@ -164,16 +169,21 @@ def _instantaneous_slope_at_current(fit, current_cycle):
 
 
 def _cycles_from_slope(current_soh, slope, threshold=SOH_THRESHOLD):
+    # tighter cap once the cell is already close to EOL -- a flat trend there
+    # is weaker evidence of real headroom than the same flat trend far from EOL
+    # (a short plateau or noise can look identical to genuine stabilization
+    # this close to threshold, so we don't want to promise 5000 cycles off it)
+    cap = MAX_REASONABLE_RUL_NEAR_EOL if (current_soh - threshold) <= NEAR_EOL_MARGIN else MAX_REASONABLE_RUL
     if slope >= -MIN_SLOPE_MAGNITUDE:
         # flat, improving, or too shallow to trust -- decline signal isn't
         # distinguishable from noise yet. Rather than emit NaN (which breaks
         # anything downstream expecting a number), treat it as "no meaningful
         # degradation detected yet" and report the cap -- i.e. at least this
         # many cycles remain under current conditions.
-        return MAX_REASONABLE_RUL
+        return cap
     rul = (current_soh - threshold) / (-slope)
     rul = max(rul, 0.0)
-    return min(rul, MAX_REASONABLE_RUL)  # cap absurd extrapolations from a barely-negative slope
+    return min(rul, cap)  # cap absurd extrapolations from a barely-negative slope
 
 
 # ---- step 3: best/worst bands from a local slope distribution -------------
