@@ -2,4 +2,7 @@ pandas
 numpy
 matplotlib
 scikit-learn
+scipy
 streamlit
+plotly
+ollama
