@@ -609,31 +609,60 @@ else:
 
 soh_gradient_color = f"rgb({r_val}, {g_val}, {b_val})"
 
-# Step 7 Pop-Up / Modal Detail View via st.dialog
+# Step 7 Pop-Up / Modal Detail View via st.dialog (Hardened & Error-Safe)
 @st.dialog("🔍 Comprehensive Cell Telemetry & Model Details")
 def show_cell_details_dialog(c_id, df_c, r_row):
     st.markdown(f"### 🔋 Battery Cell `{c_id}` Deep-Dive Diagnostics")
+    
+    # Helper for safe column retrieval
+    def get_field(field_name, default=0.0):
+        try:
+            if isinstance(r_row, pd.DataFrame) and len(r_row) > 0:
+                return r_row[field_name].iloc[0]
+            elif isinstance(r_row, pd.Series) and field_name in r_row:
+                return r_row[field_name]
+        except Exception:
+            pass
+        return default
+
+    init_soh = float(df_c['soh_ground_truth'].iloc[0]) if len(df_c) > 0 else 100.0
+    last_soh = float(df_c['soh_predicted'].iloc[-1]) if len(df_c) > 0 else 90.0
+    slope_val_m = float(get_field('trend_slope', 0.0))
+    likely_rul = int(get_field('rul_likely_cycles', 0))
+    worst_rul = int(get_field('rul_worst_cycles', 0))
+    best_rul = int(get_field('rul_best_cycles', 5000))
+    top_d = str(get_field('top_driver', "cumulative_time_above_40C"))
+
     c1, c2, c3 = st.columns(3)
     with c1:
         st.metric("Total Cycles Monitored", f"{len(df_c)}")
-        st.metric("Initial SoH", f"{df_c['soh_ground_truth'].iloc[0]:.2f}%")
+        st.metric("Initial SoH", f"{init_soh:.2f}%")
     with c2:
-        st.metric("Latest SoH", f"{df_c['soh_predicted'].iloc[-1]:.2f}%")
-        st.metric("Decline Velocity", f"{float(r_row['trend_slope'].iloc[0]) if len(r_row) > 0 else 0.0:.5f}%/cycle")
+        st.metric("Latest SoH", f"{last_soh:.2f}%")
+        st.metric("Decline Velocity", f"{slope_val_m:.5f}%/cycle")
     with c3:
-        st.metric("Likely RUL", f"{int(r_row['rul_likely_cycles'].iloc[0]) if len(r_row) > 0 else 0} cycles")
-        st.metric("P10-P90 RUL Spread", f"{int(r_row['rul_worst_cycles'].iloc[0]) if len(r_row) > 0 else 0} – {int(r_row['rul_best_cycles'].iloc[0]) if len(r_row) > 0 else 0}")
+        st.metric("Likely RUL", f"{likely_rul} cycles")
+        st.metric("P10-P90 RUL Spread", f"{worst_rul} – {best_rul}")
     
     st.markdown("---")
     st.markdown("#### ⚙️ Feature Stressors & Physics Model Assumptions")
-    top_d = r_row['top_driver'].iloc[0] if len(r_row) > 0 else "cumulative_time_above_40C"
     st.write(f"**Primary Degradation Stressor**: `{top_d}`")
     st.write("**Physics Degradation Engine**: Exponential decay ($k \\in [0.9, 1.1] \\times k_{base}$), thermal stress gate ($T > 40^\\circ\\text{C}$), high C-rate acceleration ($C > 1.5$).")
     
     st.markdown("---")
     st.markdown("#### 📊 Telemetry Snapshot (First 5 & Last 5 Cycles)")
-    snap_df = pd.concat([df_c.head(5), df_c.tail(5)])
-    st.dataframe(snap_df[['cycle_id', 'soh_predicted', 'temp_max', 'c_rate', 'discharge_depth']], use_container_width=True)
+    
+    try:
+        snap_df = pd.concat([df_c.head(5), df_c.tail(5)])
+        target_cols = ['cycle_id', 'soh_predicted', 'cumulative_time_above_40C', 'c_rate', 'discharge_depth']
+        valid_cols = [c for c in target_cols if c in snap_df.columns]
+        
+        if valid_cols:
+            st.dataframe(snap_df[valid_cols], use_container_width=True)
+        else:
+            st.info("📋 Telemetry snapshot data is empty or unavailable.")
+    except Exception:
+        st.warning("⚠️ Unable to load telemetry snapshot table.")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📋 Active Cell Profile")
