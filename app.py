@@ -945,7 +945,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 with st.expander("🔬 Telemetry & Physics Degradation Model Parameters"):
     col_t1, col_t2 = st.columns(2)
     with col_t1:
-        st.markdown("""
+        st.markdown(r"""
         **Degradation Physics Model Assumptions**:
         - **Thermal Stress Gate**: Degradation accelerates when temperature $> 40^\circ\text{C}$.
         - **C-Rate Current Density**: High rate charging ($>0.8\text{ C}$) drives lithium plating risk.
