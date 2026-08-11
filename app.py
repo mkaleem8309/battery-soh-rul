@@ -499,77 +499,100 @@ st.markdown("""
         color: #475569;
         max-width: 520px;
     }
+
+    /* Fleet Overview page — dark management-dashboard style */
+    .ov-header {
+        margin-bottom: 1.6rem;
+    }
+    .ov-eyebrow {
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #3b82f6;
+        margin-bottom: 0.3rem;
+    }
+    .ov-title {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 800;
+        font-size: 2.1rem;
+        color: #f8fafc;
+    }
+    .ov-subtitle {
+        color: #94a3b8;
+        font-size: 0.95rem;
+        margin-top: 0.2rem;
+    }
+    .ov-kpi-card {
+        background: #12151c;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 1.1rem 1.2rem;
+        margin-bottom: 1.4rem;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .ov-kpi-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(59,130,246,0.4);
+    }
+    .ov-kpi-label {
+        font-size: 0.78rem;
+        color: #64748b;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.4rem;
+    }
+    .ov-kpi-value {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1.7rem;
+    }
+    .ov-cell-card {
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 0.6rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .ov-cell-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    }
+    .ov-cell-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .ov-cell-id {
+        font-weight: 700;
+        color: #f8fafc;
+        font-size: 0.95rem;
+    }
+    .ov-cell-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        border: 1px solid;
+        border-radius: 999px;
+        padding: 0.15rem 0.6rem;
+        letter-spacing: 0.02em;
+    }
+    .ov-cell-soh {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1.4rem;
+        color: #f8fafc;
+        margin-bottom: 0.2rem;
+    }
+    .ov-cell-meta {
+        font-size: 0.78rem;
+        color: #64748b;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1b. WELCOME / HERO SCREEN (gates the dashboard behind a single CTA)
-# -----------------------------------------------------------------------------
-if "entered_dashboard" not in st.session_state:
-    st.session_state["entered_dashboard"] = False
-
-if not st.session_state["entered_dashboard"]:
-    st.markdown("""
-    <div class="hero-wrap">
-        <div class="hero-glow"></div>
-        <div class="hero-badge">Predictive Battery Analytics</div>
-        <div class="hero-title">
-            Battery State-of-Health &amp;<br><span class="accent">Remaining Useful Life</span> Estimator
-        </div>
-        <div class="hero-subtitle">
-            Turns raw charge/discharge telemetry into SoH predictions, uncertainty-banded
-            RUL forecasts, and plain-language operator guidance — so degradation shows up
-            weeks before it becomes a failure.
-        </div>
-        <div class="hero-stats">
-            <div><div class="hero-stat-value">18</div><div class="hero-stat-label">CELLS MONITORED</div></div>
-            <div><div class="hero-stat-value">98.6%</div><div class="hero-stat-label">MODEL R²</div></div>
-            <div><div class="hero-stat-value">3</div><div class="hero-stat-label">RUL BANDS</div></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    _, _mid, _ = st.columns([1, 1, 1])
-    with _mid:
-        st.markdown('<div class="hero-cta-wrap">', unsafe_allow_html=True)
-        if st.button("Launch Dashboard", type="primary", use_container_width=True, key="hero_launch_btn"):
-            st.session_state["entered_dashboard"] = True
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="display:flex; justify-content:center;">
-        <div class="hero-footnote">
-            This is a data-driven estimate, not a substitute for manufacturer testing or
-            certified diagnostics. Do not use as the sole basis for safety-critical decisions.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.stop()
-
-# -----------------------------------------------------------------------------
-# 2. TOP DISCLAIMER BANNER (NON-DISMISSIBLE)
-# -----------------------------------------------------------------------------
-st.markdown("""
-<div class="disclaimer-banner">
-    <span style="font-weight: 700;">NOTICE</span>
-    <div>
-        <strong>SAFETY DISCLAIMER:</strong> Predictive telemetry estimates are for advisory decision-support only and do not replace certified physical testing or manufacturer diagnostics.
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Top Header Energy Banner Graphic
-st.markdown("""
-<div class="header-banner">
-    <div class="header-title">Battery State-of-Health (SoH) & RUL Estimator</div>
-    <div class="header-subtitle">Real-Time Telemetry Analytics, Predictive Degradation Modeling & Safety Guardrails</div>
-</div>
-""", unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# 3. REAL TEAMMATES DATA LOADERS
+# 1a. SHARED DATA LOADER (moved above page routing so both Overview and
+#     Detail pages can use it)
 # -----------------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def load_pipeline_data():
@@ -597,7 +620,7 @@ def load_pipeline_data():
                 )
         except Exception:
             pass
-        
+
     drivers_file = os.path.join('outputs', 'feature_importances.csv')
     if os.path.exists(drivers_file):
         df_drivers = pd.read_csv(drivers_file)
@@ -606,31 +629,177 @@ def load_pipeline_data():
             'Feature': ['cumulative_time_above_40C', 'c_rate', 'discharge_depth'],
             'Importance': [0.85, 0.10, 0.05]
         })
-        
+
     soh_preds_file = os.path.join('outputs', 'soh_predictions.csv')
     if os.path.exists(soh_preds_file):
         df_soh = pd.read_csv(soh_preds_file)
     else:
         df_soh = df_features[['cycle_id', 'cell_id', 'soh_ground_truth']].copy()
         df_soh['soh_predicted'] = df_soh['soh_ground_truth']
-        
+
     df_merged = df_features.merge(
-        df_soh[['cell_id', 'cycle_id', 'soh_predicted']], 
-        on=['cell_id', 'cycle_id'], 
+        df_soh[['cell_id', 'cycle_id', 'soh_predicted']],
+        on=['cell_id', 'cycle_id'],
         how='left'
     )
     df_merged['soh_predicted'] = df_merged['soh_predicted'].fillna(df_merged['soh_ground_truth'])
     df_merged['soh_upper'] = np.clip(df_merged['soh_predicted'] + 0.8, 60.0, 100.0)
     df_merged['soh_lower'] = np.clip(df_merged['soh_predicted'] - 0.8, 60.0, 100.0)
-    
+
     rul_file = os.path.join('outputs', 'rul_predictions.csv')
     if os.path.exists(rul_file):
         df_rul = pd.read_csv(rul_file)
     else:
         df_rul = rm.build_rul_output(df_soh)
-        
+
     return df_merged, df_drivers, df_rul
 
+
+def classify_tier(soh, rul_likely, slope):
+    if soh <= 80.0 or rul_likely <= 50:
+        return "Critical", "#ef4444", "rgba(239, 68, 68, 0.14)"
+    elif soh <= 85.0 or slope <= -0.05:
+        return "Monitor", "#f59e0b", "rgba(245, 158, 11, 0.14)"
+    else:
+        return "Healthy", "#22c55e", "rgba(34, 197, 94, 0.14)"
+
+
+# -----------------------------------------------------------------------------
+# 1b. PAGE ROUTER — welcome -> fleet overview -> cell detail
+# -----------------------------------------------------------------------------
+if "app_page" not in st.session_state:
+    st.session_state["app_page"] = "welcome"
+
+# ---- PAGE 1: WELCOME / HERO SCREEN -----------------------------------------
+if st.session_state["app_page"] == "welcome":
+    st.markdown("""
+    <div class="hero-wrap">
+        <div class="hero-glow"></div>
+        <div class="hero-badge">Predictive Battery Analytics</div>
+        <div class="hero-title">
+            Battery State-of-Health &amp;<br><span class="accent">Remaining Useful Life</span> Estimator
+        </div>
+        <div class="hero-subtitle">
+            Turns raw charge/discharge telemetry into SoH predictions, uncertainty-banded
+            RUL forecasts, and plain-language operator guidance — so degradation shows up
+            weeks before it becomes a failure.
+        </div>
+        <div class="hero-stats">
+            <div><div class="hero-stat-value">18</div><div class="hero-stat-label">CELLS MONITORED</div></div>
+            <div><div class="hero-stat-value">98.6%</div><div class="hero-stat-label">MODEL R²</div></div>
+            <div><div class="hero-stat-value">3</div><div class="hero-stat-label">RUL BANDS</div></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    _, _mid, _ = st.columns([1, 1, 1])
+    with _mid:
+        st.markdown('<div class="hero-cta-wrap">', unsafe_allow_html=True)
+        if st.button("Launch Dashboard", type="primary", use_container_width=True, key="hero_launch_btn"):
+            st.session_state["app_page"] = "overview"
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="display:flex; justify-content:center;">
+        <div class="hero-footnote">
+            This is a data-driven estimate, not a substitute for manufacturer testing or
+            certified diagnostics. Do not use as the sole basis for safety-critical decisions.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.stop()
+
+# ---- PAGE 2: FLEET OVERVIEW ------------------------------------------------
+if st.session_state["app_page"] == "overview":
+    df_all_ov, df_drivers_ov, df_rul_ov = load_pipeline_data()
+
+    tiers = df_rul_ov.apply(
+        lambda r: classify_tier(r["current_soh"], r["rul_likely_cycles"], r["trend_slope"])[0], axis=1
+    )
+    n_healthy = (tiers == "Healthy").sum()
+    n_monitor = (tiers == "Monitor").sum()
+    n_critical = (tiers == "Critical").sum()
+    fleet_avg_soh = df_rul_ov["current_soh"].mean()
+
+    st.markdown("""
+    <div class="ov-header">
+        <div>
+            <div class="ov-eyebrow">Fleet Overview</div>
+            <div class="ov-title">Battery Fleet Management</div>
+            <div class="ov-subtitle">Live health status across every monitored cell</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    k1, k2, k3, k4 = st.columns(4)
+    for col, label, value, color in [
+        (k1, "Fleet Average SoH", f"{fleet_avg_soh:.1f}%", "#3b82f6"),
+        (k2, "Healthy", str(n_healthy), "#22c55e"),
+        (k3, "Monitor Closely", str(n_monitor), "#f59e0b"),
+        (k4, "Replace Soon", str(n_critical), "#ef4444"),
+    ]:
+        with col:
+            st.markdown(f"""
+            <div class="ov-kpi-card">
+                <div class="ov-kpi-label">{label}</div>
+                <div class="ov-kpi-value" style="color:{color};">{value}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown('<div class="section-header">- Cell Fleet Grid</div>', unsafe_allow_html=True)
+
+    grid_cols = st.columns(3)
+    for idx, row in df_rul_ov.sort_values("cell_id").reset_index(drop=True).iterrows():
+        tier_label, tier_color, tier_bg = classify_tier(row["current_soh"], row["rul_likely_cycles"], row["trend_slope"])
+        col = grid_cols[idx % 3]
+        with col:
+            st.markdown(f"""
+            <div class="ov-cell-card" style="border-color:{tier_color}44; background:{tier_bg};">
+                <div class="ov-cell-top">
+                    <span class="ov-cell-id">{row['cell_id']}</span>
+                    <span class="ov-cell-badge" style="color:{tier_color}; border-color:{tier_color}66;">{tier_label}</span>
+                </div>
+                <div class="ov-cell-soh">{row['current_soh']:.1f}<span style="font-size:0.85rem; color:#64748b;">% SoH</span></div>
+                <div class="ov-cell-meta">RUL (likely): {int(row['rul_likely_cycles'])} cycles</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("View Details", key=f"ov_view_{row['cell_id']}", use_container_width=True):
+                st.session_state["selected_cell"] = row["cell_id"]
+                st.session_state["app_page"] = "detail"
+                st.rerun()
+
+    st.stop()
+
+# ---- PAGE 3: CELL DETAIL (existing per-cell dashboard) ---------------------
+if st.button("- Back to Fleet Overview", key="back_to_overview_btn"):
+    st.session_state["app_page"] = "overview"
+    st.rerun()
+
+# -----------------------------------------------------------------------------
+# 2. TOP DISCLAIMER BANNER (NON-DISMISSIBLE)
+# -----------------------------------------------------------------------------
+st.markdown("""
+<div class="disclaimer-banner">
+    <span style="font-weight: 700;">NOTICE</span>
+    <div>
+        <strong>SAFETY DISCLAIMER:</strong> Predictive telemetry estimates are for advisory decision-support only and do not replace certified physical testing or manufacturer diagnostics.
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Top Header Energy Banner Graphic
+st.markdown("""
+<div class="header-banner">
+    <div class="header-title">Battery State-of-Health (SoH) & RUL Estimator</div>
+    <div class="header-subtitle">Real-Time Telemetry Analytics, Predictive Degradation Modeling & Safety Guardrails</div>
+</div>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 3. LOAD DATA FOR DETAIL PAGE (function defined earlier in the page router)
+# -----------------------------------------------------------------------------
 df_all, df_drivers, df_rul = load_pipeline_data()
 
 # -----------------------------------------------------------------------------
