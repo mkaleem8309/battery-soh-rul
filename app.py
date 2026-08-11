@@ -555,11 +555,16 @@ st.markdown("""
         transform: translateY(-2px);
         border-color: rgba(59,130,246,0.4);
     }
+    .ov-kpi-label-row {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 0.5rem;
+    }
     .ov-kpi-label {
         font-size: 0.78rem;
         color: #64748b;
         letter-spacing: 0.02em;
-        margin-bottom: 0.4rem;
     }
     .ov-kpi-value {
         font-family: 'Outfit', sans-serif;
@@ -760,17 +765,22 @@ if st.session_state["app_page"] == "overview":
     </div>
     """, unsafe_allow_html=True)
 
+    ov_svg_battery = """<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>"""
+    ov_svg_check = """<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>"""
+    ov_svg_warning = """<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>"""
+    ov_svg_alert = """<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>"""
+
     k1, k2, k3, k4 = st.columns(4)
-    for col, label, value, color in [
-        (k1, "Fleet Average SoH", f"{fleet_avg_soh:.1f}%", "#3b82f6"),
-        (k2, "Healthy", str(n_healthy), "#22c55e"),
-        (k3, "Monitor Closely", str(n_monitor), "#f59e0b"),
-        (k4, "Replace Soon", str(n_critical), "#ef4444"),
+    for col, label, value, color, icon in [
+        (k1, "Fleet Average SoH", f"{fleet_avg_soh:.1f}%", "#3b82f6", ov_svg_battery),
+        (k2, "Healthy", str(n_healthy), "#22c55e", ov_svg_check),
+        (k3, "Monitor Closely", str(n_monitor), "#f59e0b", ov_svg_warning),
+        (k4, "Replace Soon", str(n_critical), "#ef4444", ov_svg_alert),
     ]:
         with col:
             st.markdown(f"""
             <div class="ov-kpi-card">
-                <div class="ov-kpi-label">{label}</div>
+                <div class="ov-kpi-label-row">{icon} <span class="ov-kpi-label">{label}</span></div>
                 <div class="ov-kpi-value" style="color:{color};">{value}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -1145,14 +1155,42 @@ svg_shield = """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stro
 
 with col1:
     st.markdown(f"""
-    <div class="kpi-card">
+    <div class="kpi-card" style="padding-bottom: 4px;">
         <div class="kpi-header-row">{svg_battery} <span class="kpi-title">Current Health (SoH)</span></div>
-        <div class="kpi-value" style="color: {soh_gradient_color};">{current_soh:.1f}%</div>
-        <div style="width: 100%; background: rgba(255,255,255,0.1); height: 6px; border-radius: 4px; margin-top: 10px; overflow: hidden;">
-            <div style="width: {current_soh}%; background: {soh_gradient_color}; height: 100%; border-radius: 4px; transition: width 0.4s ease;"></div>
-        </div>
-    </div>
     """, unsafe_allow_html=True)
+
+    soh_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=current_soh,
+        number={"suffix": "%", "font": {"size": 30, "color": soh_gradient_color, "family": "Outfit, sans-serif"}},
+        gauge={
+            "axis": {"range": [60, 100], "tickwidth": 0, "tickcolor": "rgba(255,255,255,0.15)",
+                      "tickfont": {"size": 9, "color": "#64748b"}},
+            "bar": {"color": soh_gradient_color, "thickness": 0.28},
+            "bgcolor": "rgba(0,0,0,0)",
+            "borderwidth": 0,
+            "steps": [
+                {"range": [60, 80], "color": "rgba(239,68,68,0.14)"},
+                {"range": [80, 85], "color": "rgba(245,158,11,0.14)"},
+                {"range": [85, 100], "color": "rgba(34,197,94,0.14)"},
+            ],
+            "threshold": {
+                "line": {"color": "#ef4444", "width": 2},
+                "thickness": 0.75,
+                "value": 80,
+            },
+        },
+    ))
+    soh_gauge.update_layout(
+        height=150,
+        margin=dict(l=18, r=18, t=8, b=4),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={"color": "#94a3b8"},
+    )
+    st.plotly_chart(soh_gauge, use_container_width=True, config={"displayModeBar": False}, key="soh_gauge_chart")
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with col2:
     st.markdown(f"""
