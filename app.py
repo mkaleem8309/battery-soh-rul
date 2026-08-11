@@ -148,6 +148,9 @@ st.markdown("""
         scrollbar-width: thin;
         scrollbar-color: #334155 #0a0e14;
     }
+    /* NOTE: cell selection now uses st.button with data-testid targeting
+       (see stBaseButton-primary/secondary rules below), not these classes.
+       Kept only for any HTML-rendered cards elsewhere in the file. */
     .cell-card {
         background: #12151c;
         border: 1px solid rgba(255, 255, 255, 0.06);
@@ -265,19 +268,27 @@ st.markdown("""
     }
 
     /* Step 5 Custom Animated AI Thinking Pulse Orb Loading State */
-    @keyframes aiPulseOrb {
-        0% {
-            transform: scale(0.92);
-            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    @keyframes aiOrbGlow {
+        0%, 100% {
+            transform: scale(0.94);
+            box-shadow:
+                0 0 20px 4px rgba(59, 130, 246, 0.45),
+                0 0 40px 12px rgba(59, 130, 246, 0.20);
         }
-        70% {
-            transform: scale(1.08);
-            box-shadow: 0 0 0 18px rgba(59, 130, 246, 0);
+        50% {
+            transform: scale(1.06);
+            box-shadow:
+                0 0 32px 8px rgba(59, 130, 246, 0.65),
+                0 0 60px 20px rgba(59, 130, 246, 0.30);
         }
-        100% {
-            transform: scale(0.92);
-            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-        }
+    }
+    @keyframes aiOrbSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    @keyframes aiParticleTwinkle {
+        0%, 100% { opacity: 0.15; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.15); }
     }
     .ai-thinking-container {
         background: #12151c;
@@ -290,15 +301,44 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 14px;
+        gap: 16px;
+    }
+    .ai-orb-wrap {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .ai-thinking-orb {
-        width: 26px;
-        height: 26px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
-        background: #3b82f6;
-        animation: aiPulseOrb 1.8s infinite ease-in-out;
+        background: radial-gradient(circle at 35% 30%, #93c5fd 0%, #3b82f6 45%, #1e40af 100%);
+        animation: aiOrbGlow 1.8s ease-in-out infinite;
+        z-index: 2;
     }
+    .ai-orb-ring {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        border: 1px dashed rgba(96, 165, 250, 0.35);
+        animation: aiOrbSpin 6s linear infinite;
+        z-index: 1;
+    }
+    .ai-particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #93c5fd;
+        animation: aiParticleTwinkle 1.6s ease-in-out infinite;
+    }
+    .ai-particle:nth-child(1) { top: -2px;  left: 8px;  animation-delay: 0s; }
+    .ai-particle:nth-child(2) { top: 10px;  right: -4px; animation-delay: 0.3s; }
+    .ai-particle:nth-child(3) { bottom: 2px; left: -4px; animation-delay: 0.6s; }
+    .ai-particle:nth-child(4) { bottom: -2px; right: 10px; animation-delay: 0.9s; }
     .ai-thinking-text {
         font-family: 'Inter', sans-serif;
         color: #94a3b8;
@@ -350,8 +390,163 @@ st.markdown("""
         line-height: 1.65;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
+
+    /* Welcome / hero screen — Stellar-inspired dark hero, own design system */
+    .hero-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        min-height: 78vh;
+        padding: 2rem 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-glow {
+        position: absolute;
+        top: -10%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 640px;
+        height: 640px;
+        background: radial-gradient(circle, rgba(59,130,246,0.22) 0%, rgba(59,130,246,0.06) 40%, transparent 70%);
+        filter: blur(10px);
+        pointer-events: none;
+        z-index: 0;
+    }
+    .hero-badge {
+        position: relative;
+        z-index: 1;
+        display: inline-block;
+        padding: 0.35rem 0.9rem;
+        border: 1px solid rgba(59,130,246,0.35);
+        background: rgba(59,130,246,0.08);
+        border-radius: 999px;
+        color: #93c5fd;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 1.4rem;
+    }
+    .hero-title {
+        position: relative;
+        z-index: 1;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 800;
+        font-size: 3rem;
+        line-height: 1.15;
+        color: #f8fafc;
+        margin-bottom: 1rem;
+        max-width: 780px;
+    }
+    .hero-title .accent {
+        background: linear-gradient(90deg, #60a5fa, #34d399);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .hero-subtitle {
+        position: relative;
+        z-index: 1;
+        font-size: 1.05rem;
+        color: #94a3b8;
+        max-width: 620px;
+        line-height: 1.7;
+        margin-bottom: 2.2rem;
+    }
+    .hero-stats {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        gap: 2.2rem;
+        margin-bottom: 2.4rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .hero-stat-value {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1.6rem;
+        color: #f8fafc;
+    }
+    .hero-stat-label {
+        font-size: 0.78rem;
+        color: #64748b;
+        letter-spacing: 0.03em;
+    }
+    div[data-testid="stButton"] button[kind="primary"].hero-cta,
+    .hero-cta-wrap button[kind="primary"] {
+        background: linear-gradient(90deg, #3b82f6, #2563eb) !important;
+        border: none !important;
+        padding: 0.75rem 2.4rem !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 8px 24px rgba(59,130,246,0.35) !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    .hero-cta-wrap button[kind="primary"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 12px 30px rgba(59,130,246,0.45) !important;
+    }
+    .hero-footnote {
+        position: relative;
+        z-index: 1;
+        margin-top: 1.6rem;
+        font-size: 0.75rem;
+        color: #475569;
+        max-width: 520px;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 1b. WELCOME / HERO SCREEN (gates the dashboard behind a single CTA)
+# -----------------------------------------------------------------------------
+if "entered_dashboard" not in st.session_state:
+    st.session_state["entered_dashboard"] = False
+
+if not st.session_state["entered_dashboard"]:
+    st.markdown("""
+    <div class="hero-wrap">
+        <div class="hero-glow"></div>
+        <div class="hero-badge">🔋 Predictive Battery Analytics</div>
+        <div class="hero-title">
+            Battery State-of-Health &amp;<br><span class="accent">Remaining Useful Life</span> Estimator
+        </div>
+        <div class="hero-subtitle">
+            Turns raw charge/discharge telemetry into SoH predictions, uncertainty-banded
+            RUL forecasts, and plain-language operator guidance — so degradation shows up
+            weeks before it becomes a failure.
+        </div>
+        <div class="hero-stats">
+            <div><div class="hero-stat-value">18</div><div class="hero-stat-label">CELLS MONITORED</div></div>
+            <div><div class="hero-stat-value">98.6%</div><div class="hero-stat-label">MODEL R²</div></div>
+            <div><div class="hero-stat-value">3</div><div class="hero-stat-label">RUL BANDS</div></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    _, _mid, _ = st.columns([1, 1, 1])
+    with _mid:
+        st.markdown('<div class="hero-cta-wrap">', unsafe_allow_html=True)
+        if st.button("Launch Dashboard →", type="primary", use_container_width=True, key="hero_launch_btn"):
+            st.session_state["entered_dashboard"] = True
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="display:flex; justify-content:center;">
+        <div class="hero-footnote">
+            This is a data-driven estimate, not a substitute for manufacturer testing or
+            certified diagnostics. Do not use as the sole basis for safety-critical decisions.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.stop()
 
 # -----------------------------------------------------------------------------
 # 2. TOP DISCLAIMER BANNER (NON-DISMISSIBLE)
@@ -492,10 +687,16 @@ st.markdown(f"""
         background-color: #12151c !important;
         border: 1px solid rgba(255, 255, 255, 0.06) !important;
         color: #94a3b8 !important;
+        transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
     }}
     button[data-testid="stBaseButton-secondary"]:hover {{
         border-color: #3b82f6 !important;
         color: #f8fafc !important;
+        transform: translateY(-2px);
+    }}
+    button[data-testid="stBaseButton-primary"],
+    div.stButton > button[data-testid="stBaseButton-primary"] {{
+        transition: box-shadow 0.25s ease, transform 0.2s ease !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -923,7 +1124,14 @@ def fetch_real_narrative(soh_v, slope_v, driver_str, r_best, r_likely, r_worst):
 narrative_placeholder = st.empty()
 narrative_placeholder.markdown('''
 <div class="ai-thinking-container">
-    <div class="ai-thinking-orb"></div>
+    <div class="ai-orb-wrap">
+        <div class="ai-orb-ring"></div>
+        <div class="ai-thinking-orb"></div>
+        <div class="ai-particle"></div>
+        <div class="ai-particle"></div>
+        <div class="ai-particle"></div>
+        <div class="ai-particle"></div>
+    </div>
     <div class="ai-thinking-text">
         <strong>AI Assistant is analyzing this cell...</strong><br>
         Synthesizing telemetry history, stress drivers, and risk guardrails
