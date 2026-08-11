@@ -14,7 +14,7 @@ import src.rul_model as rm
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Battery SoH & RUL Estimator",
-    page_icon="🔋",
+    page_icon="B",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -512,7 +512,7 @@ if not st.session_state["entered_dashboard"]:
     st.markdown("""
     <div class="hero-wrap">
         <div class="hero-glow"></div>
-        <div class="hero-badge">🔋 Predictive Battery Analytics</div>
+        <div class="hero-badge">Predictive Battery Analytics</div>
         <div class="hero-title">
             Battery State-of-Health &amp;<br><span class="accent">Remaining Useful Life</span> Estimator
         </div>
@@ -532,7 +532,7 @@ if not st.session_state["entered_dashboard"]:
     _, _mid, _ = st.columns([1, 1, 1])
     with _mid:
         st.markdown('<div class="hero-cta-wrap">', unsafe_allow_html=True)
-        if st.button("Launch Dashboard →", type="primary", use_container_width=True, key="hero_launch_btn"):
+        if st.button("Launch Dashboard", type="primary", use_container_width=True, key="hero_launch_btn"):
             st.session_state["entered_dashboard"] = True
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -553,7 +553,7 @@ if not st.session_state["entered_dashboard"]:
 # -----------------------------------------------------------------------------
 st.markdown("""
 <div class="disclaimer-banner">
-    <span style="font-size: 1.2rem;">⚠️</span>
+    <span style="font-weight: 700;">NOTICE</span>
     <div>
         <strong>SAFETY DISCLAIMER:</strong> Predictive telemetry estimates are for advisory decision-support only and do not replace certified physical testing or manufacturer diagnostics.
     </div>
@@ -563,7 +563,7 @@ st.markdown("""
 # Top Header Energy Banner Graphic
 st.markdown("""
 <div class="header-banner">
-    <div class="header-title">🔋 Battery State-of-Health (SoH) & RUL Estimator</div>
+    <div class="header-title">Battery State-of-Health (SoH) & RUL Estimator</div>
     <div class="header-subtitle">Real-Time Telemetry Analytics, Predictive Degradation Modeling & Safety Guardrails</div>
 </div>
 """, unsafe_allow_html=True)
@@ -701,7 +701,7 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="section-header">📱 Interactive Battery Cell Selector</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">- Interactive Battery Cell Selector</div>', unsafe_allow_html=True)
 
 # Render interactive cell cards in a clean horizontal grid (carousel cards)
 card_cols = st.columns(min(len(cell_list), 6))
@@ -723,13 +723,13 @@ for i, c_id in enumerate(cell_list):
 
     if c_soh <= 80.0 or c_rul_cycles <= 50:
         c_status = "Replace"
-        c_icon = "🔴"
+        c_icon = "CRITICAL"
     elif c_soh <= 85.0 or c_slope <= -0.05:
         c_status = "Monitor"
-        c_icon = "🟡"
+        c_icon = "MONITOR"
     else:
         c_status = "Healthy"
-        c_icon = "🟢"
+        c_icon = "HEALTHY"
 
     is_selected = (c_id == st.session_state["selected_cell"])
     btn_label = f"{c_icon} {c_id} ({c_soh:.1f}%)"
@@ -744,7 +744,7 @@ for i, c_id in enumerate(cell_list):
             st.session_state["selected_cell"] = c_id
             st.rerun()
 
-st.sidebar.header("🕹️ Cell Controls & Sidebar Sync")
+st.sidebar.header("- Cell Controls & Sidebar Sync")
 sidebar_selected = st.sidebar.selectbox(
     "Target Battery Cell (Sidebar Sync):", 
     cell_list, 
@@ -799,15 +799,15 @@ top_feat_name = cell_top_driver.replace('_', ' ').title()
 if current_soh <= 80.0 or rul_likely <= 50:
     status_label = "Replace Soon"
     badge_class = "badge-replace"
-    avatar_icon = "🔴"
+    avatar_icon = "CRITICAL"
 elif current_soh <= 85.0 or slope_val <= -0.05:
     status_label = "Monitor Closely"
     badge_class = "badge-monitor"
-    avatar_icon = "🟡"
+    avatar_icon = "MONITOR"
 else:
     status_label = "Healthy"
     badge_class = "badge-healthy"
-    avatar_icon = "🟢"
+    avatar_icon = "HEALTHY"
 
 # Continuous SoH Color Gradient calculation (Emerald -> Amber -> Red)
 soh_norm = np.clip((current_soh - 80.0) / 20.0, 0.0, 1.0)
@@ -825,9 +825,9 @@ else:
 soh_gradient_color = f"rgb({r_val}, {g_val}, {b_val})"
 
 # Step 7 Pop-Up / Modal Detail View via st.dialog (Hardened & Error-Safe)
-@st.dialog("🔍 Comprehensive Cell Telemetry & Model Details")
+@st.dialog("Comprehensive Cell Telemetry & Model Details")
 def show_cell_details_dialog(c_id, df_c, r_row):
-    st.markdown(f"### 🔋 Battery Cell `{c_id}` Deep-Dive Diagnostics")
+    st.markdown(f"### Battery Cell `{c_id}` Deep-Dive Diagnostics")
     
     # Helper for safe column retrieval
     def get_field(field_name, default=0.0):
@@ -860,12 +860,12 @@ def show_cell_details_dialog(c_id, df_c, r_row):
         st.metric("P10-P90 RUL Spread", f"{worst_rul} – {best_rul}")
     
     st.markdown("---")
-    st.markdown("#### ⚙️ Feature Stressors & Physics Model Assumptions")
+    st.markdown("#### Feature Stressors & Physics Model Assumptions")
     st.write(f"**Primary Degradation Stressor**: `{top_d}`")
     st.write("**Physics Degradation Engine**: Exponential decay ($k \\in [0.9, 1.1] \\times k_{base}$), thermal stress gate ($T > 40^\\circ\\text{C}$), high C-rate acceleration ($C > 1.5$).")
     
     st.markdown("---")
-    st.markdown("#### 📊 Telemetry Snapshot (First 5 & Last 5 Cycles)")
+    st.markdown("#### Telemetry Snapshot (First 5 & Last 5 Cycles)")
     
     try:
         snap_df = pd.concat([df_c.head(5), df_c.tail(5)])
@@ -875,17 +875,17 @@ def show_cell_details_dialog(c_id, df_c, r_row):
         if valid_cols:
             st.dataframe(snap_df[valid_cols], use_container_width=True)
         else:
-            st.info("📋 Telemetry snapshot data is empty or unavailable.")
+            st.info("Telemetry snapshot data is empty or unavailable.")
     except Exception:
-        st.warning("⚠️ Unable to load telemetry snapshot table.")
+        st.warning("Unable to load telemetry snapshot table.")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📋 Active Cell Profile")
+st.sidebar.subheader("- Active Cell Profile")
 st.sidebar.write(f"**Cell Identifier**: {avatar_icon} `{selected_cell}`")
 st.sidebar.write(f"**Telemetry History**: `{len(df_cell)} cycles`")
 st.sidebar.write(f"**Decline Velocity**: `{slope_val:.5f}% / cycle`")
 st.sidebar.write(f"**Status Tier**: <span class=\"badge-pill {badge_class}\">{status_label}</span>", unsafe_allow_html=True)
-if st.sidebar.button("🔍 View Cell Telemetry Details", use_container_width=True):
+if st.sidebar.button("View Cell Telemetry Details", use_container_width=True):
     show_cell_details_dialog(selected_cell, df_cell, cell_rul_row)
 
 # -----------------------------------------------------------------------------
@@ -941,7 +941,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 # 7. CHART 1: SOH DECAY TRAJECTORY (Step 4 Dark Floating Card Hover Popups)
 # -----------------------------------------------------------------------------
-st.markdown('<div class="section-header">📉 State-of-Health (SoH) Decay Trajectory</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">- State-of-Health (SoH) Decay Trajectory</div>', unsafe_allow_html=True)
 
 df_cell['soh_delta'] = df_cell['soh_predicted'].diff().fillna(0.0)
 
@@ -1020,7 +1020,7 @@ st.plotly_chart(fig_soh, width='stretch')
 col_chart1, col_chart2 = st.columns(2)
 
 with col_chart1:
-    st.markdown('<div class="section-header">📊 Cell Stressor Importance Breakdown</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">- Cell Stressor Importance Breakdown</div>', unsafe_allow_html=True)
     if cell_scores_dict:
         driver_df_cell = pd.DataFrame(list(cell_scores_dict.items()), columns=['Feature', 'Importance'])
         driver_df_cell['clean_name'] = driver_df_cell['Feature'].str.replace('_', ' ').str.title()
@@ -1104,7 +1104,7 @@ with col_chart2:
 # -----------------------------------------------------------------------------
 st.markdown(f'''
 <div class="section-header">
-    🤖 AI Safety Diagnostic Summary
+    - AI Safety Diagnostic Summary
     <span class="badge-pill {badge_class}" style="margin-left: auto;">{status_label}</span>
 </div>
 ''', unsafe_allow_html=True)
@@ -1150,7 +1150,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 # 10. EXPANDABLE TECHNICAL DETAILS & PAGINATED TELEMETRY TABLE
 # -----------------------------------------------------------------------------
-with st.expander("🔬 Telemetry & Physics Degradation Model Parameters"):
+with st.expander("Telemetry & Physics Degradation Model Parameters"):
     col_t1, col_t2 = st.columns(2)
     with col_t1:
         st.markdown(r"""
@@ -1168,7 +1168,7 @@ with st.expander("🔬 Telemetry & Physics Degradation Model Parameters"):
         - Primary Degradation Cause: `{top_feat_name}`
         """)
 
-with st.expander("📋 Paginated Telemetry Data Table"):
+with st.expander("Paginated Telemetry Data Table"):
     PAGE_SIZE = 6
     total_rows = len(df_cell)
     total_pages = max(1, (total_rows + PAGE_SIZE - 1) // PAGE_SIZE)
@@ -1193,7 +1193,7 @@ with st.expander("📋 Paginated Telemetry Data Table"):
     with p_col2:
         st.markdown(f"<div style='text-align: center; color: #94a3b8; padding-top: 6px;'>Page <strong>{current_page + 1}</strong> of <strong>{total_pages}</strong> ({total_rows} total cycles)</div>", unsafe_allow_html=True)
     with p_col3:
-        if st.button("Next Page ➡️", disabled=(current_page == total_pages - 1), use_container_width=True):
+        if st.button("Next Page", disabled=(current_page == total_pages - 1), use_container_width=True):
             st.session_state["table_page"] += 1
             st.rerun()
 
