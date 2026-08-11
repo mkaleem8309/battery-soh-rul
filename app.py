@@ -756,15 +756,61 @@ if st.session_state["app_page"] == "overview":
         col = grid_cols[idx % 3]
         with col:
             st.markdown(f"""
-            <div class="ov-cell-card" style="border-color:{tier_color}44; background:{tier_bg};">
+            <div class="ov-cell-card" style="border-color:{tier_color}44; background:{tier_bg}; padding-bottom:0.4rem;">
                 <div class="ov-cell-top">
                     <span class="ov-cell-id">{row['cell_id']}</span>
                     <span class="ov-cell-badge" style="color:{tier_color}; border-color:{tier_color}66;">{tier_label}</span>
                 </div>
                 <div class="ov-cell-soh">{row['current_soh']:.1f}<span style="font-size:0.85rem; color:#64748b;">% SoH</span></div>
+            """, unsafe_allow_html=True)
+
+            cell_trend = df_all_ov[df_all_ov["cell_id"] == row["cell_id"]].sort_values("cycle_id")
+            if len(cell_trend) > 1:
+                _r, _g, _b = int(tier_color[1:3], 16), int(tier_color[3:5], 16), int(tier_color[5:7], 16)
+                _y_min = cell_trend["soh_predicted"].min()
+                _y_max = cell_trend["soh_predicted"].max()
+                _y_span = max(_y_max - _y_min, 0.5)  # avoid a zero-height range on a near-flat cell
+                _y_pad = _y_span * 0.15
+                spark = go.Figure()
+                # baseline trace added FIRST, at the series' own minimum (not 0), so the
+                # fill below doesn't pull the y-axis down to 0 and flatten the visible slope
+                spark.add_trace(go.Scatter(
+                    x=cell_trend["cycle_id"],
+                    y=[_y_min - _y_pad] * len(cell_trend),
+                    mode="lines",
+                    line=dict(color="rgba(0,0,0,0)", width=0),
+                    hoverinfo="skip",
+                    showlegend=False,
+                ))
+                spark.add_trace(go.Scatter(
+                    x=cell_trend["cycle_id"],
+                    y=cell_trend["soh_predicted"],
+                    mode="lines",
+                    line=dict(color=tier_color, width=2.5),
+                    fill="tonexty",
+                    fillcolor=f"rgba({_r},{_g},{_b},0.14)",
+                    hoverinfo="skip",
+                    showlegend=False,
+                ))
+                spark.update_layout(
+                    height=80,
+                    margin=dict(l=0, r=0, t=4, b=4),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis=dict(visible=False),
+                    yaxis=dict(visible=False, range=[_y_min - _y_pad, _y_max + _y_pad]),
+                    showlegend=False,
+                )
+                st.plotly_chart(
+                    spark, use_container_width=True, config={"displayModeBar": False},
+                    key=f"ov_spark_{row['cell_id']}"
+                )
+
+            st.markdown(f"""
                 <div class="ov-cell-meta">RUL (likely): {int(row['rul_likely_cycles'])} cycles</div>
             </div>
             """, unsafe_allow_html=True)
+
             if st.button("View Details", key=f"ov_view_{row['cell_id']}", use_container_width=True):
                 st.session_state["selected_cell"] = row["cell_id"]
                 st.session_state["app_page"] = "detail"
