@@ -415,6 +415,26 @@ st.markdown("""
         pointer-events: none;
         z-index: 0;
     }
+    @keyframes heroParticleFloat {
+        0%   { opacity: 0.15; transform: translate(0, 0) scale(0.8); }
+        50%  { opacity: 0.9;  transform: translate(var(--drift-x, 8px), var(--drift-y, -14px)) scale(1.2); }
+        100% { opacity: 0.15; transform: translate(0, 0) scale(0.8); }
+    }
+    .hero-particle {
+        position: absolute;
+        border-radius: 50%;
+        background: #93c5fd;
+        pointer-events: none;
+        z-index: 0;
+        animation: heroParticleFloat ease-in-out infinite;
+    }
+    .hero-particle:nth-child(2) { width: 5px; height: 5px; top: 12%; left: 28%; --drift-x: 10px; --drift-y: -18px; animation-duration: 5.5s; animation-delay: 0s; background: #93c5fd; }
+    .hero-particle:nth-child(3) { width: 3px; height: 3px; top: 22%; left: 68%; --drift-x: -14px; --drift-y: -10px; animation-duration: 6.8s; animation-delay: 0.7s; background: #60a5fa; }
+    .hero-particle:nth-child(4) { width: 4px; height: 4px; top: 55%; left: 18%; --drift-x: 12px; --drift-y: 14px; animation-duration: 7.4s; animation-delay: 1.4s; background: #34d399; }
+    .hero-particle:nth-child(5) { width: 3px; height: 3px; top: 8%; left: 52%; --drift-x: -8px; --drift-y: 16px; animation-duration: 5.9s; animation-delay: 2.1s; background: #93c5fd; }
+    .hero-particle:nth-child(6) { width: 5px; height: 5px; top: 62%; left: 74%; --drift-x: -12px; --drift-y: -12px; animation-duration: 6.3s; animation-delay: 0.4s; background: #60a5fa; }
+    .hero-particle:nth-child(7) { width: 3px; height: 3px; top: 35%; left: 8%; --drift-x: 16px; --drift-y: -8px; animation-duration: 7.9s; animation-delay: 1.8s; background: #93c5fd; }
+    .hero-particle:nth-child(8) { width: 4px; height: 4px; top: 40%; left: 88%; --drift-x: -10px; --drift-y: 12px; animation-duration: 6.6s; animation-delay: 1.1s; background: #34d399; }
     .hero-badge {
         position: relative;
         z-index: 1;
@@ -675,6 +695,13 @@ if st.session_state["app_page"] == "welcome":
     st.markdown("""
     <div class="hero-wrap">
         <div class="hero-glow"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
         <div class="hero-badge">Predictive Battery Analytics</div>
         <div class="hero-title">
             Battery State-of-Health &amp;<br><span class="accent">Remaining Useful Life</span> Estimator
